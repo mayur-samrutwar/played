@@ -9,30 +9,44 @@ export default function PoseTracking() {
   const ballsRef = useRef([]);
   const animationFrameRef = useRef();
   const zapsRef = useRef([]);
+  const [lives, setLives] = useState(100);
 
   const createBall = () => {
-    const radius = 10;
+    const radius = 20;
     return {
       x: Math.random() * (canvasRef.current?.width - 2 * radius) + radius,
       y: -radius,
-      speed: 1,
+      speed: 2,
       radius
     };
   };
 
-  const createZap = (x, y) => {
+  const createZap = (x, y, angle) => {
     return {
       x,
       y,
+      angle,
       radius: 5,
-      maxRadius: 30,
+      sliceLength: 40,
       opacity: 1,
+      particles: Array.from({ length: 8 }, () => ({
+        x: x,
+        y: y,
+        speed: Math.random() * 3 + 2,
+        angle: angle + (Math.random() - 0.5) * 0.8, // Spread particles in a cone
+        size: Math.random() * 4 + 2
+      }))
     };
   };
 
   const updateAndDrawBalls = (ctx, poses) => {
     const balls = ballsRef.current;
     const zaps = zapsRef.current;
+    
+    // Add new balls randomly
+    if (Math.random() < 0.01) { // 1% chance each frame
+      balls.push(createBall());
+    }
     
     // Get wrist positions if available
     let wrists = [];
@@ -56,11 +70,12 @@ export default function PoseTracking() {
         const dy = ball.y - wrist.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance < ball.radius + 20) { // 20px collision radius
+        if (distance < ball.radius + 30) { // 30px collision radius
           collision = true;
-          zaps.push(createZap(ball.x, ball.y));
+          const angle = Math.atan2(dy, dx);
+          zaps.push(createZap(ball.x, ball.y, angle));
           balls.splice(i, 1);
-          setScore(prev => prev + 1); // Add 1 point for hitting with wrist
+          setScore(prev => prev + 1);
           return;
         }
       });
@@ -72,37 +87,61 @@ export default function PoseTracking() {
         ctx.fillStyle = 'red';
         ctx.fill();
 
-        // Remove ball when it touches bottom without adding score
+        // Remove ball and reduce lives when it touches bottom
         if (ball.y > canvasRef.current.height + ball.radius) {
           balls.splice(i, 1);
+          setLives(prev => Math.max(0, prev - 1));
         }
       }
     }
 
-    // Update and draw zap effects
+    // Draw zap effects
+    drawZaps(ctx, zaps);
+  };
+
+  const drawZaps = (ctx, zaps) => {
     for (let i = zaps.length - 1; i >= 0; i--) {
       const zap = zaps[i];
       
-      // Draw zap effect
+      // Draw main slice effect
       ctx.beginPath();
-      ctx.arc(zap.x, zap.y, zap.radius, 0, 2 * Math.PI);
-      ctx.strokeStyle = `rgba(255, 255, 0, ${zap.opacity})`;
+      const startX = zap.x - Math.cos(zap.angle) * zap.sliceLength;
+      const startY = zap.y - Math.sin(zap.angle) * zap.sliceLength;
+      const endX = zap.x + Math.cos(zap.angle) * zap.sliceLength;
+      const endY = zap.y + Math.sin(zap.angle) * zap.sliceLength;
+      
+      // Create gradient for slice
+      const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+      gradient.addColorStop(0, `rgba(255, 255, 0, 0)`);
+      gradient.addColorStop(0.5, `rgba(255, 255, 0, ${zap.opacity})`);
+      gradient.addColorStop(1, `rgba(255, 255, 0, 0)`);
+      
       ctx.lineWidth = 3;
+      ctx.strokeStyle = gradient;
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
       ctx.stroke();
 
-      // Update zap animation
-      zap.radius += 2;
-      zap.opacity -= 0.1;
+      // Draw particles
+      zap.particles.forEach(particle => {
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 0, ${zap.opacity})`;
+        ctx.fill();
 
-      // Remove faded zaps
+        // Update particle position
+        particle.x += Math.cos(particle.angle) * particle.speed;
+        particle.y += Math.sin(particle.angle) * particle.speed;
+        particle.size *= 0.95;
+      });
+
+      // Update animation
+      zap.sliceLength += 8;
+      zap.opacity -= 0.06;
+
       if (zap.opacity <= 0) {
         zaps.splice(i, 1);
       }
-    }
-
-    // Add new ball randomly
-    if (Math.random() < 0.01) {
-      balls.push(createBall());
     }
   };
 
@@ -169,8 +208,11 @@ export default function PoseTracking() {
             // Draw skeleton
             drawSkeleton(ctx, poses);
 
-            // Update and draw balls with poses data
+            // Update and draw balls
             updateAndDrawBalls(ctx, poses);
+
+            // Draw zap effects
+            drawZaps(ctx, zapsRef.current);
           }
           
           animationFrameRef.current = requestAnimationFrame(() => detect(detector));
@@ -283,15 +325,27 @@ export default function PoseTracking() {
           }}
         />
       </div>
-      <div style={{
-        marginLeft: '20px',
-        padding: '20px',
-        backgroundColor: '#f5f5f5',
-        borderRadius: '8px',
-        minWidth: '200px'
-      }}>
-        <h2 style={{ margin: '0 0 10px 0' }}>Score</h2>
-        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{score}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{
+          marginLeft: '20px',
+          padding: '20px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '8px',
+          minWidth: '200px'
+        }}>
+          <h2 style={{ margin: '0 0 10px 0' }}>Score</h2>
+          <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{score}</div>
+        </div>
+        <div style={{
+          marginLeft: '20px',
+          padding: '20px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '8px',
+          minWidth: '200px'
+        }}>
+          <h2 style={{ margin: '0 0 10px 0' }}>Lives</h2>
+          <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{lives}</div>
+        </div>
       </div>
     </div>
   );
