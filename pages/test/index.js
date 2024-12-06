@@ -60,7 +60,7 @@ export default function PoseTracking() {
           collision = true;
           zaps.push(createZap(ball.x, ball.y));
           balls.splice(i, 1);
-          setScore(prev => prev + 2); // More points for hitting with wrist
+          setScore(prev => prev + 1); // Add 1 point for hitting with wrist
           return;
         }
       });
@@ -72,10 +72,9 @@ export default function PoseTracking() {
         ctx.fillStyle = 'red';
         ctx.fill();
 
-        // Check if ball touched bottom
+        // Remove ball when it touches bottom without adding score
         if (ball.y > canvasRef.current.height + ball.radius) {
           balls.splice(i, 1);
-          setScore(prev => prev + 1);
         }
       }
     }
