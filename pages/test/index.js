@@ -8,6 +8,7 @@ export default function PoseTracking() {
   const [score, setScore] = useState(0);
   const ballsRef = useRef([]);
   const animationFrameRef = useRef();
+  const zapsRef = useRef([]);
 
   const createBall = () => {
     const radius = 10;
@@ -19,24 +20,84 @@ export default function PoseTracking() {
     };
   };
 
-  const updateAndDrawBalls = (ctx) => {
+  const createZap = (x, y) => {
+    return {
+      x,
+      y,
+      radius: 5,
+      maxRadius: 30,
+      opacity: 1,
+    };
+  };
+
+  const updateAndDrawBalls = (ctx, poses) => {
     const balls = ballsRef.current;
+    const zaps = zapsRef.current;
     
-    // Update ball positions and check for bottom touches
+    // Get wrist positions if available
+    let wrists = [];
+    if (poses && poses[0]) {
+      const leftWrist = poses[0].keypoints.find(kp => kp.name === 'left_wrist');
+      const rightWrist = poses[0].keypoints.find(kp => kp.name === 'right_wrist');
+      
+      if (leftWrist?.score > 0.3) wrists.push(leftWrist);
+      if (rightWrist?.score > 0.3) wrists.push(rightWrist);
+    }
+
+    // Update and draw balls
     for (let i = balls.length - 1; i >= 0; i--) {
       const ball = balls[i];
       ball.y += ball.speed;
 
-      // Draw ball
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.radius, 0, 2 * Math.PI);
-      ctx.fillStyle = 'red';
-      ctx.fill();
+      // Check collision with wrists
+      let collision = false;
+      wrists.forEach(wrist => {
+        const dx = ball.x - wrist.x;
+        const dy = ball.y - wrist.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < ball.radius + 20) { // 20px collision radius
+          collision = true;
+          zaps.push(createZap(ball.x, ball.y));
+          balls.splice(i, 1);
+          setScore(prev => prev + 2); // More points for hitting with wrist
+          return;
+        }
+      });
 
-      // Check if ball touched bottom
-      if (ball.y > canvasRef.current.height + ball.radius) {
-        balls.splice(i, 1);
-        setScore(prev => prev + 1);
+      if (!collision) {
+        // Draw ball if no collision
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'red';
+        ctx.fill();
+
+        // Check if ball touched bottom
+        if (ball.y > canvasRef.current.height + ball.radius) {
+          balls.splice(i, 1);
+          setScore(prev => prev + 1);
+        }
+      }
+    }
+
+    // Update and draw zap effects
+    for (let i = zaps.length - 1; i >= 0; i--) {
+      const zap = zaps[i];
+      
+      // Draw zap effect
+      ctx.beginPath();
+      ctx.arc(zap.x, zap.y, zap.radius, 0, 2 * Math.PI);
+      ctx.strokeStyle = `rgba(255, 255, 0, ${zap.opacity})`;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Update zap animation
+      zap.radius += 2;
+      zap.opacity -= 0.1;
+
+      // Remove faded zaps
+      if (zap.opacity <= 0) {
+        zaps.splice(i, 1);
       }
     }
 
@@ -109,8 +170,8 @@ export default function PoseTracking() {
             // Draw skeleton
             drawSkeleton(ctx, poses);
 
-            // Update and draw balls
-            updateAndDrawBalls(ctx);
+            // Update and draw balls with poses data
+            updateAndDrawBalls(ctx, poses);
           }
           
           animationFrameRef.current = requestAnimationFrame(() => detect(detector));
