@@ -9,7 +9,7 @@ export default function FruitNinja() {
   const ballsRef = useRef([]);
   const animationFrameRef = useRef();
   const zapsRef = useRef([]);
-  const [lives, setLives] = useState(100);
+  const [lives, setLives] = useState(3);
 
   const createBall = () => {
     const radius = 20;
