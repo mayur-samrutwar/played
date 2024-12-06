@@ -19,17 +19,14 @@ export default function Navbar() {
         </Link>
       </div>
       <div className="flex-grow text-center space-x-8">
-      <Link href="/create" className="text-lg text-gray-700 hover:text-gray-900">
-          Create
+        <Link href="/games" className="text-lg text-gray-700 hover:text-gray-900">
+          Games
         </Link>
-        <Link href="/market" className="text-lg text-gray-700 hover:text-gray-900">
-          Marketplace
+        <Link href="/compete" className="text-lg text-gray-700 hover:text-gray-900">
+          Compete 1v1
         </Link>
-        <Link href="/relayer" className="text-lg text-gray-700 hover:text-gray-900">
-          Relayer
-        </Link>
-        <Link href="/profile" className="text-lg text-gray-700 hover:text-gray-900">
-          Profile
+        <Link href="/challenges" className="text-lg text-gray-700 hover:text-gray-900">
+          Challenges
         </Link>
       </div>
       <w3m-button label="Login" balance="hide" />
