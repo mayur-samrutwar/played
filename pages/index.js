@@ -1,19 +1,8 @@
-import Image from "next/image";
-import localFont from "next/font/local";
-
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
-
 export default function Home() {
   return (
-   <div></div>
+   <div className="flex flex-col items-center justify-center h-screen">
+     <h1 className="font-geist-sans text-7xl mb-8 font-black text-center max-w-4xl">A fitness app that feels like a game</h1>
+     <button className="font-geist-mono text-lg px-4 py-2 rounded bg-blue-500 text-white border-none">Play Now</button>
+   </div>
   );
 }

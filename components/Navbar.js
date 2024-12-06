@@ -28,6 +28,9 @@ export default function Navbar() {
         <Link href="/challenges" className="text-lg text-gray-700 hover:text-gray-900">
           Challenges
         </Link>
+        <Link href="/npc" className="text-lg text-gray-700 hover:text-gray-900">
+          NPC
+        </Link>
       </div>
       <w3m-button label="Login" balance="hide" />
     </nav>
