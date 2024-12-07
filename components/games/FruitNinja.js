@@ -4,9 +4,11 @@ import * as poseDetection from '@tensorflow-models/pose-detection';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import gamesABI from '../../contract/abi/games.json';
 import Image from 'next/image';
+import { parseEther } from 'viem';
 
 const GAMES_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAMES_CONTRACT_ADDRESS_BASE;
 const FRUIT_NINJA_GAME_ID = 0;
+const STAKE_AMOUNT = 0.00025; // Match contract's STAKE_AMOUNT
 
 export default function FruitNinja({ 
   showLeaderboard = false,
@@ -16,8 +18,9 @@ export default function FruitNinja({
 }) {
   const { writeContract, data: hash } = useWriteContract();
   const { 
-    isLoading: isSubmitting,
+    isLoading: isConfirming,
     isSuccess: isConfirmed,
+    error: txError,
   } = useWaitForTransactionReceipt({
     hash,
   });
@@ -38,6 +41,9 @@ export default function FruitNinja({
   const [gameMode, setGameMode] = useState(null); // 'free' or 'earn'
   const [showEarnDialog, setShowEarnDialog] = useState(false);
   const earnAnimationsRef = useRef([]);
+  const [txHash, setTxHash] = useState(null);
+  const [isStaking, setIsStaking] = useState(false);
+  const [stakeError, setStakeError] = useState(null);
 
   const createBall = () => {
     const radius = 20;
@@ -293,10 +299,38 @@ export default function FruitNinja({
     }
   };
 
+  const handleStakeAndPlay = async () => {
+    setStakeError(null);
+    setIsStaking(true);
+    
+    try {
+      if (!GAMES_CONTRACT_ADDRESS) {
+        throw new Error('Contract address is not defined');
+      }
+
+      const tx = await writeContract({
+        address: GAMES_CONTRACT_ADDRESS,
+        abi: gamesABI,
+        functionName: 'playGame',
+        args: [FRUIT_NINJA_GAME_ID],
+        value: parseEther(STAKE_AMOUNT.toString()),
+      });
+
+      console.log('Stake transaction submitted:', tx);
+      
+      // Don't close dialog or start game yet - wait for confirmation
+    } catch (error) {
+      console.error('Error staking:', error);
+      setStakeError(error.message || 'Failed to stake. Please try again.');
+      setIsStaking(false);
+    }
+  };
+
   const handleSubmitScore = async (score) => {
     if (!score) return;
     
     setSubmitError(null);
+    setTxHash(null);
     
     try {
       if (isBattleMode && onSubmitScore) {
@@ -309,6 +343,7 @@ export default function FruitNinja({
           args: [FRUIT_NINJA_GAME_ID, score],
         });
         console.log('Transaction Hash:', hash);
+        setTxHash(hash);
       } else {
         throw new Error('Contract address is not defined');
       }
@@ -321,10 +356,18 @@ export default function FruitNinja({
   // Add effect to handle transaction confirmation
   useEffect(() => {
     if (isConfirmed) {
-      console.log('Transaction confirmed with hash:', hash);
-      closeGame();
+      // Transaction confirmed successfully
+      setIsStaking(false);
+      setShowEarnDialog(false);
+      setGameMode('earn');
+      setIsGameStarted(true);
+    } else if (txError) {
+      // Transaction failed
+      console.error('Transaction failed:', txError);
+      setStakeError(txError.message || 'Transaction failed. Please try again.');
+      setIsStaking(false);
     }
-  }, [isConfirmed, hash]);
+  }, [isConfirmed, txError]);
 
   useEffect(() => {
     if (!isGameStarted) return;
@@ -513,6 +556,7 @@ export default function FruitNinja({
         <button 
           onClick={() => setShowEarnDialog(false)}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          disabled={isStaking}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -531,24 +575,37 @@ export default function FruitNinja({
 
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Base Ninja Master</h2>
         <p className="text-gray-600 mb-6">
-          Earn 0.0000025 ETH for every Base token you slice in the Base Ninja game!
+          Earn {STAKE_AMOUNT * 0.01} ETH for every Base token you slice in the Base Ninja game!
         </p>
 
-        <div className="flex justify-between items-center mb-8">
-          <span className="text-sm text-gray-600">Stake: 0.00025 ETH</span>
-        </div>
+        {stakeError && (
+          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg text-sm">
+            {stakeError}
+          </div>
+        )}
 
         <button 
-          onClick={() => {
-            setShowEarnDialog(false);
-            setGameMode('earn');
-            setIsGameStarted(true);
-          }}
-          className="w-full bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+          onClick={handleStakeAndPlay}
+          disabled={isStaking || isConfirming}
+          className={`
+            w-full bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
             cursor-pointer transition-all duration-200 outline-none
-            hover:bg-blue-700 active:scale-[0.98]"
+            hover:bg-blue-700 active:scale-[0.98]
+            disabled:opacity-50 disabled:cursor-not-allowed
+            flex items-center justify-center gap-2
+          `}
         >
-          Start Game
+          {(isStaking || isConfirming) ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {isConfirming ? 'Confirming Transaction...' : 'Staking ETH...'}
+            </>
+          ) : (
+            `Stake ${STAKE_AMOUNT} ETH and Play`
+          )}
         </button>
       </div>
     </div>
@@ -601,7 +658,7 @@ export default function FruitNinja({
           <button 
             onClick={closeGame}
             className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            disabled={isSubmitting}
+            disabled={isConfirming}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -631,54 +688,67 @@ export default function FruitNinja({
         
         {gameMode === 'earn' && (
           <div className="flex flex-col gap-4">
-            <button 
-              onClick={async () => {
-                try {
-                  await handleSubmitScore(finalScore);
-                } catch (error) {
-                  // Error is handled in handleSubmitScore
-                }
-              }}
-              disabled={isSubmitting}
-              className={`
-                bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
-                cursor-pointer transition-all duration-200 outline-none
-                hover:bg-blue-700 active:scale-[0.98]
-                disabled:opacity-50 disabled:cursor-not-allowed
-                flex items-center justify-center
-              `}
-            >
-              {isSubmitting ? (
-                <>
-                  <svg 
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    fill="none" 
-                    viewBox="0 0 24 24"
-                  >
-                    <circle 
-                      className="opacity-25" 
-                      cx="12" 
-                      cy="12" 
-                      r="10" 
-                      stroke="currentColor" 
-                      strokeWidth="4"
-                    />
-                    <path 
-                      className="opacity-75" 
-                      fill="currentColor" 
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Submitting Score...
-                </>
-              ) : (
-                'Submit Score'
-              )}
-            </button>
-            <p className="text-sm text-gray-500">
-              Submit your score to claim your ETH rewards
-            </p>
+            {txHash ? (
+              <div className="text-center">
+                <p className="text-green-600 font-medium mb-2">Score submitted successfully!</p>
+                <a 
+                  href={`https://base-sepolia.blockscout.com/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
+                  View Transaction
+                </a>
+                <button
+                  onClick={closeGame}
+                  className="mt-4 w-full bg-gray-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                    cursor-pointer transition-all duration-200 outline-none
+                    hover:bg-gray-700 active:scale-[0.98]"
+                >
+                  Close Game
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => handleSubmitScore(finalScore)}
+                disabled={isConfirming}
+                className={`
+                  bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                  cursor-pointer transition-all duration-200 outline-none
+                  hover:bg-blue-700 active:scale-[0.98]
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  flex items-center justify-center
+                `}
+              >
+                {isConfirming ? (
+                  <>
+                    <svg 
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24"
+                    >
+                      <circle 
+                        className="opacity-25" 
+                        cx="12" 
+                        cy="12" 
+                        r="10" 
+                        stroke="currentColor" 
+                        strokeWidth="4"
+                      />
+                      <path 
+                        className="opacity-75" 
+                        fill="currentColor" 
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Submitting Score...
+                  </>
+                ) : (
+                  'Submit Score'
+                )}
+              </button>
+            )}
           </div>
         )}
       </div>
