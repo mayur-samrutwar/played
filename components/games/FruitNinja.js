@@ -437,14 +437,25 @@ export default function FruitNinja({ showLeaderboard = false }) {
               Final Score: {finalScore}
             </p>
             
-            <button 
-              onClick={resetGame}
-              className="bg-gray-900 text-white rounded-xl px-8 py-4 text-lg font-medium
-                cursor-pointer transition-all duration-200 outline-none
-                hover:bg-gray-700 active:scale-[0.98]"
-            >
-              Play Again
-            </button>
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => {/* Add submit score logic */}}
+                className="bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                  cursor-pointer transition-all duration-200 outline-none
+                  hover:bg-blue-700 active:scale-[0.98]"
+              >
+                Submit Score
+              </button>
+              
+              <button 
+                onClick={resetGame}
+                className="bg-gray-900 text-white rounded-xl px-8 py-4 text-lg font-medium
+                  cursor-pointer transition-all duration-200 outline-none
+                  hover:bg-gray-700 active:scale-[0.98]"
+              >
+                Play Again
+              </button>
+            </div>
           </div>
         </div>
       )}
