@@ -20,7 +20,7 @@ export default function Commit() {
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <span className="px-3 py-1 bg-green-700 rounded-full text-sm">Fitness Challenge</span>
+              <span className="px-3 py-1 bg-blue-700 rounded-full text-sm">Fitness Challenge</span>
               <h2 className="text-2xl font-bold mt-3">7-Day Plank Challenge</h2>
             </div>
             <Image 
@@ -36,7 +36,7 @@ export default function Commit() {
             {/* Avatar Group */}
             <div className="flex -space-x-3">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-green-500 overflow-hidden bg-white">
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-blue-500 overflow-hidden bg-white">
                   <img 
                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`} 
                     alt="participant"
@@ -44,13 +44,13 @@ export default function Commit() {
                   />
                 </div>
               ))}
-              <div className="w-8 h-8 rounded-full bg-green-700 border-2 border-green-500 flex items-center justify-center text-xs">
+              <div className="w-8 h-8 rounded-full bg-blue-700 border-2 border-blue-500 flex items-center justify-center text-xs">
                 +99
               </div>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm">Duration: 7 days</span>
-              <a href="#" className="px-4 py-2 bg-white text-green-700 rounded-full text-sm hover:text-green-800 transition">
+              <a href="#" className="px-4 py-2 bg-white text-blue-700 rounded-full text-sm hover:text-blue-800 transition">
                 Participate
               </a>
             </div>
