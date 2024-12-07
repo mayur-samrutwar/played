@@ -41,6 +41,38 @@ export default function FruitNinja() {
     };
   };
 
+  const drawBaseLogo = (ctx, x, y, radius) => {
+    ctx.save();
+    
+    // Scale everything relative to the desired radius (original SVG is 146x146)
+    const scale = (radius * 2) / 146;
+    ctx.translate(x - radius, y - radius);
+    ctx.scale(-scale, scale); // Negative x scale to flip horizontally
+    ctx.translate(-146, 0);   // Translate back after the flip
+    
+    // Draw the blue circle
+    ctx.beginPath();
+    ctx.arc(73, 73, 73, 0, 2 * Math.PI);
+    ctx.fillStyle = '#0052FF';
+    ctx.fill();
+    
+    // Draw the white path using the exact SVG path
+    ctx.beginPath();
+    ctx.fillStyle = 'white';
+    ctx.moveTo(73.323, 123.729);
+    ctx.bezierCurveTo(101.617, 123.729, 124.553, 100.832, 124.553, 72.5875);
+    ctx.bezierCurveTo(124.553, 44.343, 101.617, 21.4463, 73.323, 21.4463);
+    ctx.bezierCurveTo(46.4795, 21.4463, 24.4581, 42.0558, 22.271, 68.2887);
+    ctx.lineTo(89.9859, 68.2887);
+    ctx.lineTo(89.9859, 76.8864);
+    ctx.lineTo(22.271, 76.8864);
+    ctx.bezierCurveTo(24.4581, 103.119, 46.4795, 123.729, 73.323, 123.729);
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.restore();
+  };
+
   const updateAndDrawBalls = (ctx, poses) => {
     const balls = ballsRef.current;
     const zaps = zapsRef.current;
@@ -99,11 +131,8 @@ export default function FruitNinja() {
       });
 
       if (!collision) {
-        // Draw ball if no collision
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, 2 * Math.PI);
-        ctx.fillStyle = 'red';
-        ctx.fill();
+        // Draw Base logo using the exact SVG path
+        drawBaseLogo(ctx, ball.x, ball.y, ball.radius);
 
         // Remove ball and reduce lives when it touches bottom
         if (ball.y > canvasRef.current.height + ball.radius) {
@@ -113,7 +142,6 @@ export default function FruitNinja() {
             if (newLives === 0) {
               setIsGameOver(true);
               setFinalScore(score);
-              // Clear all balls when game is over
               ballsRef.current = [];
             }
             return newLives;
