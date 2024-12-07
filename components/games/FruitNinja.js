@@ -40,7 +40,7 @@ export default function FruitNinja({
     return {
       x: Math.random() * (canvasRef.current?.width - 2 * radius) + radius,
       y: -radius,
-      speed: 2,
+      speed: 4,
       radius
     };
   };
