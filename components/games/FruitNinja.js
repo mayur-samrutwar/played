@@ -14,6 +14,7 @@ export default function FruitNinja({ showLeaderboard = false }) {
   const [finalScore, setFinalScore] = useState(0);
   const [backgroundMusic] = useState(new Audio('/sounds/game-music.mp3'));
   const [sliceSound] = useState(new Audio('/sounds/slice.wav'));
+  const [isGameStarted, setIsGameStarted] = useState(false);
 
   const createBall = () => {
     const radius = 20;
@@ -76,6 +77,8 @@ export default function FruitNinja({ showLeaderboard = false }) {
   };
 
   const updateAndDrawBalls = (ctx, poses) => {
+    if (isGameOver) return;
+    
     const balls = ballsRef.current;
     const zaps = zapsRef.current;
     
@@ -141,15 +144,7 @@ export default function FruitNinja({ showLeaderboard = false }) {
         // Remove ball and reduce lives when it touches bottom
         if (ball.y > canvasRef.current.height + ball.radius) {
           balls.splice(i, 1);
-          setLives(prev => {
-            const newLives = Math.max(0, prev - 1);
-            if (newLives === 0) {
-              setFinalScore(score);
-              setIsGameOver(true);
-              ballsRef.current = [];
-            }
-            return newLives;
-          });
+          setLives(prev => Math.max(0, prev - 1));
         }
       }
     }
@@ -208,11 +203,28 @@ export default function FruitNinja({ showLeaderboard = false }) {
     setLives(3);
     setScore(0);
     setIsGameOver(false);
+    setFinalScore(0);
     ballsRef.current = [];
     zapsRef.current = [];
   };
 
+  const closeGame = () => {
+    setIsGameStarted(false);
+    setIsGameOver(false);
+    setScore(0);
+    setLives(3);
+    setFinalScore(0);
+    ballsRef.current = [];
+    zapsRef.current = [];
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+    }
+  };
+
   useEffect(() => {
+    if (!isGameStarted) return;
+
     const runPoseDetection = async () => {
       try {
         // Initialize TensorFlow.js
@@ -297,7 +309,7 @@ export default function FruitNinja({ showLeaderboard = false }) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, []);
+  }, [isGameStarted]);
 
   useEffect(() => {
     if (!isGameOver) {
@@ -316,127 +328,168 @@ export default function FruitNinja({ showLeaderboard = false }) {
 
   useEffect(() => {
     if (lives === 0) {
+      // Stop the camera and clean up immediately
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      
       setFinalScore(score);
       setIsGameOver(true);
       ballsRef.current = [];
+      zapsRef.current = [];
+      
+      // Stop background music
+      backgroundMusic.pause();
+      backgroundMusic.currentTime = 0;
     }
-  }, [lives, score]);
+  }, [lives, score, backgroundMusic]);
 
   return (
     <div className="relative flex items-start p-8 max-w-[1400px] mx-auto gap-10">
-      {/* Game viewport container */}
-      <div className="relative flex-1 rounded-2xl overflow-hidden shadow-lg">
-        <video
-          ref={videoRef}
-          className="w-full h-auto block scale-x-[-1]"
-          autoPlay
-          playsInline
-        />
-        <canvas
-          ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full scale-x-[-1]"
-        />
-      </div>
-
-      {/* Right side container */}
-      {showLeaderboard ? (
-        <div className="flex flex-col gap-6 min-w-[320px]">
-          {/* Stats container */}
-          <div className="flex gap-4">
-            {/* Score card */}
-            <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
-              <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
-                Score
-              </h2>
-              <div className="text-3xl font-semibold text-gray-900 leading-none">
-                {score}
-              </div>
-            </div>
-
-            {/* Lives card */}
-            <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
-              <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
-                Lives
-              </h2>
-              <div className={`text-3xl font-semibold leading-none ${
-                lives > 1 ? 'text-gray-900' : 'text-red-500'
-              }`}>
-                {lives}
-              </div>
-            </div>
-          </div>
-
-          {/* Leaderboard */}
-          <div className="flex flex-col bg-white rounded-3xl p-8 shadow-lg">
-            <h2 className="mb-6 text-2xl font-semibold text-gray-900">
-              Global Leaderboard
-            </h2>
-
-            {/* Leaderboard List */}
-            <div className="flex flex-col gap-3">
-              {[
-                { rank: 1, address: '0x1234...5678', score: 2547 },
-                { rank: 2, address: '0x8765...4321', score: 2123 },
-                { rank: 3, address: '0x9876...1234', score: 1987 },
-                { rank: 4, address: '0x4567...8901', score: 1654 },
-                { rank: 5, address: '0x3456...7890', score: 1432 }
-              ].map((entry) => (
-                <div
-                  key={entry.rank}
-                  className={`flex items-center p-4 rounded-xl border border-gray-200 ${
-                    entry.rank === 1 ? 'bg-amber-50' : 'bg-transparent'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                    entry.rank === 1 ? 'bg-yellow-400 text-white' :
-                    entry.rank === 2 ? 'bg-gray-300 text-white' :
-                    entry.rank === 3 ? 'bg-amber-700 text-white' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
-                    {entry.rank}
-                  </div>
-                  <div className="ml-4 flex-1">
-                    <div className="text-base font-medium text-gray-900 mb-1">
-                      {entry.address}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      Score: {entry.score}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+      {!isGameStarted ? (
+        // Start Game Screen
+        <div className="w-full flex items-center justify-center min-h-[600px]">
+          <button
+            onClick={() => setIsGameStarted(true)}
+            className="bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+              cursor-pointer transition-all duration-200 outline-none
+              hover:bg-blue-700 active:scale-[0.98]"
+          >
+            Start Now
+          </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-6 min-w-[280px]">
-          {/* Original score and lives cards */}
-          <div className="p-8 bg-white rounded-2xl shadow-md text-center">
-            <h2 className="mb-4 text-lg font-medium uppercase tracking-wider text-gray-600">
-              Score
-            </h2>
-            <div className="text-5xl font-semibold text-gray-900 leading-none">
-              {score}
-            </div>
+        // Game Screen - existing JSX
+        <>
+          {/* Game viewport container */}
+          <div className="relative flex-1 rounded-2xl overflow-hidden shadow-lg">
+            <video
+              ref={videoRef}
+              className="w-full h-auto block scale-x-[-1]"
+              autoPlay
+              playsInline
+            />
+            <canvas
+              ref={canvasRef}
+              className="absolute top-0 left-0 w-full h-full scale-x-[-1]"
+            />
           </div>
 
-          <div className="p-8 bg-white rounded-2xl shadow-md text-center">
-            <h2 className="mb-4 text-lg font-medium uppercase tracking-wider text-gray-600">
-              Lives
-            </h2>
-            <div className={`text-5xl font-semibold leading-none ${
-              lives > 1 ? 'text-gray-900' : 'text-red-500'
-            }`}>
-              {lives}
+          {/* Right side container */}
+          {showLeaderboard ? (
+            <div className="flex flex-col gap-6 min-w-[320px]">
+              {/* Stats container */}
+              <div className="flex gap-4">
+                {/* Score card */}
+                <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
+                  <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
+                    Score
+                  </h2>
+                  <div className="text-3xl font-semibold text-gray-900 leading-none">
+                    {score}
+                  </div>
+                </div>
+
+                {/* Lives card */}
+                <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
+                  <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
+                    Lives
+                  </h2>
+                  <div className={`text-3xl font-semibold leading-none ${
+                    lives > 1 ? 'text-gray-900' : 'text-red-500'
+                  }`}>
+                    {lives}
+                  </div>
+                </div>
+              </div>
+
+              {/* Leaderboard */}
+              <div className="flex flex-col bg-white rounded-3xl p-8 shadow-lg">
+                <h2 className="mb-6 text-2xl font-semibold text-gray-900">
+                  Global Leaderboard
+                </h2>
+
+                {/* Leaderboard List */}
+                <div className="flex flex-col gap-3">
+                  {[
+                    { rank: 1, address: '0x1234...5678', score: 2547 },
+                    { rank: 2, address: '0x8765...4321', score: 2123 },
+                    { rank: 3, address: '0x9876...1234', score: 1987 },
+                    { rank: 4, address: '0x4567...8901', score: 1654 },
+                    { rank: 5, address: '0x3456...7890', score: 1432 }
+                  ].map((entry) => (
+                    <div
+                      key={entry.rank}
+                      className={`flex items-center p-4 rounded-xl border border-gray-200 ${
+                        entry.rank === 1 ? 'bg-amber-50' : 'bg-transparent'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                        entry.rank === 1 ? 'bg-yellow-400 text-white' :
+                        entry.rank === 2 ? 'bg-gray-300 text-white' :
+                        entry.rank === 3 ? 'bg-amber-700 text-white' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {entry.rank}
+                      </div>
+                      <div className="ml-4 flex-1">
+                        <div className="text-base font-medium text-gray-900 mb-1">
+                          {entry.address}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Score: {entry.score}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          ) : (
+            <div className="flex flex-col gap-6 min-w-[280px]">
+              {/* Original score and lives cards */}
+              <div className="p-8 bg-white rounded-2xl shadow-md text-center">
+                <h2 className="mb-4 text-lg font-medium uppercase tracking-wider text-gray-600">
+                  Score
+                </h2>
+                <div className="text-5xl font-semibold text-gray-900 leading-none">
+                  {score}
+                </div>
+              </div>
+
+              <div className="p-8 bg-white rounded-2xl shadow-md text-center">
+                <h2 className="mb-4 text-lg font-medium uppercase tracking-wider text-gray-600">
+                  Lives
+                </h2>
+                <div className={`text-5xl font-semibold leading-none ${
+                  lives > 1 ? 'text-gray-900' : 'text-red-500'
+                }`}>
+                  {lives}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Game Over Modal */}
+      {/* Modified Game Over Modal */}
       {isGameOver && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-10 text-center max-w-[400px] w-[90%] shadow-2xl">
+          <div className="bg-white rounded-3xl p-10 text-center max-w-[400px] w-[90%] shadow-2xl relative">
+            {/* Add close button */}
+            <button 
+              onClick={closeGame}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
             <h2 className="mb-2 text-3xl font-semibold text-gray-900">
               Game Over!
             </h2>
