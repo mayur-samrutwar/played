@@ -36,6 +36,9 @@ contract Games is ReentrancyGuard, Ownable {
     // Modify storage: Add array to store all scores for each game
     mapping(uint256 => ScoreEntry[]) public gameLeaderboard;
 
+    // Add this state variable to track submitted scores for each game session
+    mapping(uint256 => mapping(address => bool)) public hasSubmittedScore;
+
     // Create a new game
     function createGame(string memory gameName) external onlyOwner returns (uint256) {
         uint256 gameId = nextGameId++;
@@ -50,12 +53,19 @@ contract Games is ReentrancyGuard, Ownable {
         require(bytes(gameNames[gameId]).length > 0, "Game does not exist");
         require(msg.value == STAKE_AMOUNT, "Incorrect stake amount");
         
+        // Reset submission status when player stakes
+        hasSubmittedScore[gameId][msg.sender] = false;
+        
         emit GamePlayed(gameId, msg.sender);
     }
 
     // Modified submitScore function
     function submitScore(uint256 gameId, uint256 score) external nonReentrant {
         require(bytes(gameNames[gameId]).length > 0, "Game does not exist");
+        require(!hasSubmittedScore[gameId][msg.sender], "Score already submitted");
+        
+        // Mark score as submitted before making any state changes
+        hasSubmittedScore[gameId][msg.sender] = true;
         
         // Store score in both mappings
         gameScores[gameId][msg.sender] = score;
@@ -117,5 +127,14 @@ contract Games is ReentrancyGuard, Ownable {
         }
         
         return topScores;
+    }
+
+    // Add withdrawal function for contract owner
+    function withdrawFunds() external onlyOwner nonReentrant {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to withdraw");
+        
+        (bool success, ) = msg.sender.call{value: balance}("");
+        require(success, "Withdrawal failed");
     }
 }
