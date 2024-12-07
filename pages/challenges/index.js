@@ -57,7 +57,7 @@ export default function Challenges() {
           </div>
         </div>
 
-        {/* Daily Challenge Card */}
+        {/* Daily Challenge Card 
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -74,7 +74,7 @@ export default function Challenges() {
           <p className="mb-6">Compete in today&apos;s Base Ninja tournament! Top 3 players share 0.001 ETH prize pool.</p>
           
           <div className="flex justify-between items-center">
-            {/* Avatar Group */}
+    
             <div className="flex -space-x-3">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="w-8 h-8 rounded-full border-2 border-green-500 overflow-hidden bg-white">
@@ -97,6 +97,7 @@ export default function Challenges() {
             </div>
           </div>
         </div>
+        */}
       </div>
     </div>
   )
