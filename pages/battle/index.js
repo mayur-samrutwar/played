@@ -7,6 +7,7 @@ import { decodeEventLog } from 'viem';
 
 export default function CreateBattle() {
   const [stakeAmount, setStakeAmount] = useState('');
+  const [friendAddress, setFriendAddress] = useState(''); // Added state for friend's address
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { address } = useAccount();
@@ -46,6 +47,11 @@ export default function CreateBattle() {
       return;
     }
 
+    if (!friendAddress) {
+      alert('Please enter your friend\'s address');
+      return;
+    }
+
     setIsCreating(true);
     try {
       const stakeAmountWei = parseEther(stakeAmount);
@@ -62,6 +68,7 @@ export default function CreateBattle() {
         abi: battleABI,
         functionName: 'createBattle',
         value: stakeAmountWei,
+        args: [], // Assuming the contract function 'createBattle' takes friendAddress as an argument
       });
       
     } catch (error) {
@@ -113,6 +120,12 @@ export default function CreateBattle() {
     }
   };
 
+  // Validate friend's address on input
+  const handleFriendAddressChange = (e) => {
+    const value = e.target.value;
+    setFriendAddress(value);
+  };
+
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-3xl mx-auto">
@@ -150,6 +163,25 @@ export default function CreateBattle() {
               </p>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Competitor Address (Optional)
+              </label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <input
+                  type="text"
+                  required
+                  value={friendAddress}
+                  onChange={handleFriendAddressChange}
+                  className="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0x..."
+                />
+              </div>
+              <p className="mt-2 text-sm text-gray-500">
+                Enter your friend&apos;s Ethereum address to invite them to the battle
+              </p>
+            </div>
+
             <div className="bg-gray-50 rounded-xl p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Battle Rules</h3>
               <ul className="space-y-3 text-gray-600">
@@ -176,7 +208,7 @@ export default function CreateBattle() {
               type="submit"
               disabled={isCreating || isConfirming || !stakeAmount || !address}
               className={`w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-medium transition-colors duration-200
-                ${isCreating || isConfirming || !stakeAmount || !address ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+                ${isCreating || isConfirming || !stakeAmount || !address  ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
             >
               {isCreating || isConfirming ? 'Creating Battle...' : 'Create Battle'}
             </button>
