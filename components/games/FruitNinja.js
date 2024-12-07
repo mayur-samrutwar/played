@@ -314,6 +314,14 @@ export default function FruitNinja({ showLeaderboard = false }) {
     };
   }, [isGameOver, backgroundMusic]);
 
+  useEffect(() => {
+    if (lives === 0) {
+      setFinalScore(score);
+      setIsGameOver(true);
+      ballsRef.current = [];
+    }
+  }, [lives, score]);
+
   return (
     <div className="relative flex items-start p-8 max-w-[1400px] mx-auto gap-10">
       {/* Game viewport container */}
