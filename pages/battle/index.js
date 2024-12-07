@@ -33,8 +33,6 @@ export default function CreateBattle() {
   // Add game options
   const gameOptions = [
     { id: '0', name: 'Base Ninja', icon: '🥷' },
-    { id: '1', name: 'Save the Cat', icon: '🐱' },
-    { id: '2', name: 'Dino Run', icon: '🦖' },
   ];
 
   const handleCreateBattle = async (e) => {
