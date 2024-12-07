@@ -87,6 +87,12 @@ export default function BattlePage() {
     }
   };
 
+  // Add this helper function at the top of the component
+  const truncateAddress = (address) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -168,7 +174,7 @@ export default function BattlePage() {
                     className="object-cover"
                   />
                 </div>
-                <p className="text-sm font-mono mb-2">{battleData.player1}</p>
+                <p className="text-sm font-mono mb-2">{truncateAddress(battleData.player1)}</p>
                 <p className="text-lg font-bold">{battleData.player1Score.toString()} pts</p>
               </div>
 
@@ -194,7 +200,7 @@ export default function BattlePage() {
                     className="object-cover"
                   />
                 </div>
-                <p className="text-sm font-mono mb-2">{battleData.player2}</p>
+                <p className="text-sm font-mono mb-2">{truncateAddress(battleData.player2)}</p>
                 <p className="text-lg font-bold">{battleData.player2Score.toString()} pts</p>
               </div>
             </div>
@@ -269,7 +275,7 @@ export default function BattlePage() {
                 className="object-cover"
               />
             </div>
-            <p className="text-sm text-gray-600 font-mono">{battleData.player1}</p>
+            <p className="text-sm text-gray-600 font-mono">{truncateAddress(battleData.player1)}</p>
           </motion.div>
 
           {/* VS */}
@@ -297,7 +303,7 @@ export default function BattlePage() {
                     className="object-cover"
                   />
                 </div>
-                <p className="text-sm text-gray-600 font-mono">{battleData.player2}</p>
+                <p className="text-sm text-gray-600 font-mono">{truncateAddress(battleData.player2)}</p>
               </>
             ) : (
               <div className="w-48 h-48 relative rounded-xl overflow-hidden">
