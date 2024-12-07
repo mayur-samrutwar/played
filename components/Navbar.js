@@ -36,8 +36,8 @@ export default function Navbar() {
         <Link href="/games" className="text-lg text-gray-700 hover:text-gray-900">
           Games
         </Link>
-        <Link href="/compete" className="text-lg text-gray-700 hover:text-gray-900">
-          Compete 1v1
+        <Link href="/battle" className="text-lg text-gray-700 hover:text-gray-900">
+           1v1 Battle
         </Link>
         <Link href="/challenges" className="text-lg text-gray-700 hover:text-gray-900">
           Challenges
