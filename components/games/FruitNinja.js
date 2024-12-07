@@ -12,6 +12,8 @@ export default function FruitNinja() {
   const [lives, setLives] = useState(3);
   const [isGameOver, setIsGameOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
+  const [backgroundMusic] = useState(new Audio('/sounds/game-music.mp3'));
+  const [sliceSound] = useState(new Audio('/sounds/slice.wav'));
 
   const createBall = () => {
     const radius = 20;
@@ -126,6 +128,8 @@ export default function FruitNinja() {
           zaps.push(createZap(ball.x, ball.y, angle));
           balls.splice(i, 1);
           setScore(prev => prev + 1);
+          sliceSound.currentTime = 0; // Reset sound to start
+          sliceSound.play().catch(e => console.log('Audio play failed:', e));
           return;
         }
       });
@@ -140,8 +144,8 @@ export default function FruitNinja() {
           setLives(prev => {
             const newLives = Math.max(0, prev - 1);
             if (newLives === 0) {
-              setIsGameOver(true);
               setFinalScore(score);
+              setIsGameOver(true);
               ballsRef.current = [];
             }
             return newLives;
@@ -294,6 +298,21 @@ export default function FruitNinja() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isGameOver) {
+      backgroundMusic.loop = true;
+      backgroundMusic.play().catch(e => console.log('Audio play failed:', e));
+    } else {
+      backgroundMusic.pause();
+      backgroundMusic.currentTime = 0;
+    }
+    
+    return () => {
+      backgroundMusic.pause();
+      backgroundMusic.currentTime = 0;
+    };
+  }, [isGameOver, backgroundMusic]);
 
   return (
     <div style={{ 
