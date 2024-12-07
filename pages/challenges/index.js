@@ -51,12 +51,12 @@ export default function Challenges() {
           </div>
         </div>
 
-        {/* Skill Challenge Card */}
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+        {/* Daily Challenge Card */}
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <span className="px-3 py-1 bg-purple-700 rounded-full text-sm">Skill Challenge</span>
-              <h2 className="text-2xl font-bold mt-3">Smart Contract Wizard</h2>
+              <span className="px-3 py-1 bg-green-700 rounded-full text-sm">Daily Challenge</span>
+              <h2 className="text-2xl font-bold mt-3">Daily Ninja Tournament</h2>
             </div>
             <Image 
               src="/Base_Network_Logo.svg"
@@ -65,28 +65,28 @@ export default function Challenges() {
               height={40}
             />
           </div>
-          <p className="mb-6">Deploy your first smart contract on Base and earn a special NFT badge!</p>
+          <p className="mb-6">Compete in today's Base Ninja tournament! Top 3 players share 0.001 ETH prize pool.</p>
           
           <div className="flex justify-between items-center">
             {/* Avatar Group */}
             <div className="flex -space-x-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-purple-500 overflow-hidden">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-green-500 overflow-hidden bg-white">
                   <img 
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i+5}`} 
+                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i+10}`} 
                     alt="participant"
                     className="w-full h-full object-cover"
                   />
                 </div>
               ))}
-              <div className="w-8 h-8 rounded-full bg-purple-700 border-2 border-purple-500 flex items-center justify-center text-xs">
-                +56
+              <div className="w-8 h-8 rounded-full bg-green-700 border-2 border-green-500 flex items-center justify-center text-xs">
+                +12
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm">Stake: 0.01 ETH</span>
-              <a href="#" className="px-4 py-2 bg-purple-700 rounded-full text-sm hover:bg-purple-800 transition">
-                Participate
+              <span className="text-sm">Prize: 0.001 ETH</span>
+              <a href="#" className="px-4 py-2 bg-green-700 rounded-full text-sm hover:bg-green-800 transition">
+                Join Today
               </a>
             </div>
           </div>

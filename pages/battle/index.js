@@ -239,10 +239,6 @@ export default function CreateBattle() {
                   Both players will play the same game
                 </li>
                 <li className="flex items-center">
-                  <span className="mr-2">⏱️</span>
-                  You have 60 seconds to achieve the highest score
-                </li>
-                <li className="flex items-center">
                   <span className="mr-2">🏆</span>
                   Winner takes the entire prize pool
                 </li>
