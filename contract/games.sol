@@ -26,6 +26,16 @@ contract Games is ReentrancyGuard, Ownable {
     );
     event GamePlayed(uint256 indexed gameId, address indexed player);
 
+    // Add new struct to store score details
+    struct ScoreEntry {
+        address player;
+        uint256 score;
+        uint256 timestamp;
+    }
+    
+    // Modify storage: Add array to store all scores for each game
+    mapping(uint256 => ScoreEntry[]) public gameLeaderboard;
+
     // Create a new game
     function createGame(string memory gameName) external onlyOwner returns (uint256) {
         uint256 gameId = nextGameId++;
@@ -47,19 +57,22 @@ contract Games is ReentrancyGuard, Ownable {
     function submitScore(uint256 gameId, uint256 score) external nonReentrant {
         require(bytes(gameNames[gameId]).length > 0, "Game does not exist");
         
+        // Store score in both mappings
         gameScores[gameId][msg.sender] = score;
+        
+        // Add to leaderboard
+        gameLeaderboard[gameId].push(ScoreEntry({
+            player: msg.sender,
+            score: score,
+            timestamp: block.timestamp
+        }));
         
         // Calculate and transfer reward
         uint256 reward = score * REWARD_MULTIPLIER;
         (bool success, ) = msg.sender.call{value: reward}("");
         require(success, "Reward transfer failed");
         
-        emit ScoreSubmitted(
-            gameId, 
-            msg.sender, 
-            score,
-            block.timestamp
-        );
+        emit ScoreSubmitted(gameId, msg.sender, score, block.timestamp);
     }
 
     // Get score for a specific game and player
@@ -72,5 +85,37 @@ contract Games is ReentrancyGuard, Ownable {
     function getGameName(uint256 gameId) external view returns (string memory) {
         require(bytes(gameNames[gameId]).length > 0, "Game does not exist");
         return gameNames[gameId];
+    }
+
+    // Add new function to get all scores for a game
+    function getGameLeaderboard(uint256 gameId) external view returns (ScoreEntry[] memory) {
+        require(bytes(gameNames[gameId]).length > 0, "Game does not exist");
+        return gameLeaderboard[gameId];
+    }
+
+    // Optional: Add function to get top N scores for a game
+    function getTopScores(uint256 gameId, uint256 limit) external view returns (ScoreEntry[] memory) {
+        require(bytes(gameNames[gameId]).length > 0, "Game does not exist");
+        require(limit > 0, "Limit must be greater than 0");
+        
+        ScoreEntry[] memory allScores = gameLeaderboard[gameId];
+        uint256 resultLength = limit < allScores.length ? limit : allScores.length;
+        ScoreEntry[] memory topScores = new ScoreEntry[](resultLength);
+        
+        // Copy array to memory for sorting
+        for(uint i = 0; i < allScores.length; i++) {
+            for(uint j = i + 1; j < allScores.length; j++) {
+                if(allScores[i].score < allScores[j].score) {
+                    ScoreEntry memory temp = allScores[i];
+                    allScores[i] = allScores[j];
+                    allScores[j] = temp;
+                }
+            }
+            if(i < resultLength) {
+                topScores[i] = allScores[i];
+            }
+        }
+        
+        return topScores;
     }
 }
