@@ -351,19 +351,28 @@ export default function FruitNinja({ showLeaderboard = false }) {
   return (
     <div className="relative flex items-start p-8 max-w-[1400px] mx-auto gap-10">
       {!isGameStarted ? (
-        // Start Game Screen
-        <div className="w-full flex items-center justify-center min-h-[600px]">
-          <button
-            onClick={() => setIsGameStarted(true)}
-            className="bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
-              cursor-pointer transition-all duration-200 outline-none
-              hover:bg-blue-700 active:scale-[0.98]"
-          >
-            Start Now
-          </button>
+        // Start Game Screen with Leaderboard
+        <div className="w-full flex gap-10">
+          <div className="flex-1 flex items-center justify-center min-h-[600px]">
+            <button
+              onClick={() => setIsGameStarted(true)}
+              className="bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                cursor-pointer transition-all duration-200 outline-none
+                hover:bg-blue-700 active:scale-[0.98]"
+            >
+              Start Now
+            </button>
+          </div>
+
+          {/* Show leaderboard */}
+          {showLeaderboard && (
+            <div className="min-w-[320px]">
+              <LeaderboardComponent />
+            </div>
+          )}
         </div>
       ) : (
-        // Game Screen - existing JSX
+        // Game Screen
         <>
           {/* Game viewport container */}
           <div className="relative flex-1 rounded-2xl overflow-hidden shadow-lg">
@@ -380,99 +389,35 @@ export default function FruitNinja({ showLeaderboard = false }) {
           </div>
 
           {/* Right side container */}
-          {showLeaderboard ? (
-            <div className="flex flex-col gap-6 min-w-[320px]">
-              {/* Stats container */}
-              <div className="flex gap-4">
-                {/* Score card */}
-                <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
-                  <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
-                    Score
-                  </h2>
-                  <div className="text-3xl font-semibold text-gray-900 leading-none">
-                    {score}
-                  </div>
-                </div>
-
-                {/* Lives card */}
-                <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
-                  <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
-                    Lives
-                  </h2>
-                  <div className={`text-3xl font-semibold leading-none ${
-                    lives > 1 ? 'text-gray-900' : 'text-red-500'
-                  }`}>
-                    {lives}
-                  </div>
-                </div>
-              </div>
-
-              {/* Leaderboard */}
-              <div className="flex flex-col bg-white rounded-3xl p-8 shadow-lg">
-                <h2 className="mb-6 text-2xl font-semibold text-gray-900">
-                  Global Leaderboard
-                </h2>
-
-                {/* Leaderboard List */}
-                <div className="flex flex-col gap-3">
-                  {[
-                    { rank: 1, address: '0x1234...5678', score: 2547 },
-                    { rank: 2, address: '0x8765...4321', score: 2123 },
-                    { rank: 3, address: '0x9876...1234', score: 1987 },
-                    { rank: 4, address: '0x4567...8901', score: 1654 },
-                    { rank: 5, address: '0x3456...7890', score: 1432 }
-                  ].map((entry) => (
-                    <div
-                      key={entry.rank}
-                      className={`flex items-center p-4 rounded-xl border border-gray-200 ${
-                        entry.rank === 1 ? 'bg-amber-50' : 'bg-transparent'
-                      }`}
-                    >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                        entry.rank === 1 ? 'bg-yellow-400 text-white' :
-                        entry.rank === 2 ? 'bg-gray-300 text-white' :
-                        entry.rank === 3 ? 'bg-amber-700 text-white' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {entry.rank}
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <div className="text-base font-medium text-gray-900 mb-1">
-                          {entry.address}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Score: {entry.score}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-6 min-w-[280px]">
-              {/* Original score and lives cards */}
-              <div className="p-8 bg-white rounded-2xl shadow-md text-center">
-                <h2 className="mb-4 text-lg font-medium uppercase tracking-wider text-gray-600">
+          <div className="flex flex-col gap-6 min-w-[320px]">
+            {/* Stats container */}
+            <div className="flex gap-4">
+              {/* Score card */}
+              <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
+                <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
                   Score
                 </h2>
-                <div className="text-5xl font-semibold text-gray-900 leading-none">
+                <div className="text-3xl font-semibold text-gray-900 leading-none">
                   {score}
                 </div>
               </div>
 
-              <div className="p-8 bg-white rounded-2xl shadow-md text-center">
-                <h2 className="mb-4 text-lg font-medium uppercase tracking-wider text-gray-600">
+              {/* Lives card */}
+              <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
+                <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
                   Lives
                 </h2>
-                <div className={`text-5xl font-semibold leading-none ${
+                <div className={`text-3xl font-semibold leading-none ${
                   lives > 1 ? 'text-gray-900' : 'text-red-500'
                 }`}>
                   {lives}
                 </div>
               </div>
             </div>
-          )}
+
+            {/* Show leaderboard */}
+            {showLeaderboard && <LeaderboardComponent />}
+          </div>
         </>
       )}
 
@@ -507,7 +452,7 @@ export default function FruitNinja({ showLeaderboard = false }) {
               >
                 Submit Score
               </button>
-              
+{/*               
               <button 
                 onClick={resetGame}
                 className="bg-gray-900 text-white rounded-xl px-8 py-4 text-lg font-medium
@@ -515,7 +460,7 @@ export default function FruitNinja({ showLeaderboard = false }) {
                   hover:bg-gray-700 active:scale-[0.98]"
               >
                 Play Again
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -523,3 +468,46 @@ export default function FruitNinja({ showLeaderboard = false }) {
     </div>
   );
 }
+
+// Helper component to avoid repetition
+const LeaderboardComponent = () => (
+  <div className="flex flex-col bg-white rounded-3xl p-8 shadow-lg">
+    <h2 className="mb-6 text-2xl font-semibold text-gray-900">
+      Global Leaderboard
+    </h2>
+
+    <div className="flex flex-col gap-3">
+      {[
+        { rank: 1, address: '0x1234...5678', score: 2547 },
+        { rank: 2, address: '0x8765...4321', score: 2123 },
+        { rank: 3, address: '0x9876...1234', score: 1987 },
+        { rank: 4, address: '0x4567...8901', score: 1654 },
+        { rank: 5, address: '0x3456...7890', score: 1432 }
+      ].map((entry) => (
+        <div
+          key={entry.rank}
+          className={`flex items-center p-4 rounded-xl border border-gray-200 ${
+            entry.rank === 1 ? 'bg-amber-50' : 'bg-transparent'
+          }`}
+        >
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+            entry.rank === 1 ? 'bg-yellow-400 text-white' :
+            entry.rank === 2 ? 'bg-gray-300 text-white' :
+            entry.rank === 3 ? 'bg-amber-700 text-white' :
+            'bg-gray-100 text-gray-600'
+          }`}>
+            {entry.rank}
+          </div>
+          <div className="ml-4 flex-1">
+            <div className="text-base font-medium text-gray-900 mb-1">
+              {entry.address}
+            </div>
+            <div className="text-sm text-gray-600">
+              Score: {entry.score}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
