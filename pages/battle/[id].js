@@ -119,7 +119,7 @@ export default function BattlePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Battle Not Found</h1>
-          <p className="text-gray-600 mb-4">This battle doesn't exist.</p>
+          <p className="text-gray-600 mb-4">This battle doesn&apos;t exist.</p>
           <button
             onClick={() => router.push('/')}
             className="text-blue-500 hover:text-blue-600"
