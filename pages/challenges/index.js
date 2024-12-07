@@ -30,7 +30,7 @@ export default function Challenges() {
               height={40}
             />
           </div>
-          <p className="mb-6">Score more than 1000 points in Base Ninja game and claim your free Base name!</p>
+          <p className="mb-6">Earn 0.00025 ETH for every 100 points you score in Base Ninja game!</p>
           
           <div className="flex justify-between items-center">
             {/* Avatar Group */}
@@ -49,7 +49,7 @@ export default function Challenges() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm">Stake: 0 ETH</span>
+              <span className="text-sm">Stake: 0.00025 ETH</span>
               <a href="#" className="px-4 py-2 bg-white text-blue-700 rounded-full text-sm hover:text-blue-800 transition">
                 Participate
               </a>

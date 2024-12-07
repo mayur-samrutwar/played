@@ -28,9 +28,9 @@ export default function Navbar() {
         <Link href="/challenges" className="text-md text-gray-700 hover:text-gray-900">
           Challenges
         </Link>
-        {/* <Link href="/npc" className="text-md text-gray-700 hover:text-gray-900">
-          NPC
-        </Link> */}
+        <Link href="/commit" className="text-md text-gray-700 hover:text-gray-900">
+          Commit
+        </Link>
       </div>
       <div className="hidden md:block">
         <w3m-button label="Login" balance="hide" />
