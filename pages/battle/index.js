@@ -24,7 +24,7 @@ export default function CreateBattle() {
     abi: battleABI,
     functionName: 'createBattle',
     value: stakeAmount ? parseEther(stakeAmount) : undefined,
-    args: [],
+    args: [friendAddress],
     account: address,
   });
 
@@ -43,6 +43,7 @@ export default function CreateBattle() {
     console.log('Creating battle with params:', {
       address: BATTLE_CONTRACT_ADDRESS,
       stakeAmount,
+      friendAddress,
       hasAddress: !!address,
     });
     
@@ -70,6 +71,7 @@ export default function CreateBattle() {
         address: BATTLE_CONTRACT_ADDRESS,
         value: stakeAmountWei.toString(),
         account: address,
+        intendedPlayer: friendAddress,
       });
 
       if (simulateError) {
@@ -82,7 +84,7 @@ export default function CreateBattle() {
         abi: battleABI,
         functionName: 'createBattle',
         value: stakeAmountWei,
-        args: [],
+        args: [friendAddress],
       });
 
       console.log('Transaction submitted:', tx);

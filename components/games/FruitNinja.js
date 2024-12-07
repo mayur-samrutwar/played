@@ -7,7 +7,12 @@ import gamesABI from '../../contract/abi/games.json';
 const GAMES_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAMES_CONTRACT_ADDRESS_BASE;
 const FRUIT_NINJA_GAME_ID = 0;
 
-export default function FruitNinja({ showLeaderboard = false }) {
+export default function FruitNinja({ 
+  showLeaderboard = false,
+  isBattleMode = false,
+  onSubmitScore = null,
+  onClose = null
+}) {
   const { writeContract, data: hash } = useWriteContract();
   const { 
     isLoading: isSubmitting,
@@ -234,26 +239,30 @@ export default function FruitNinja({ showLeaderboard = false }) {
       const tracks = videoRef.current.srcObject.getTracks();
       tracks.forEach(track => track.stop());
     }
+    if (onClose) {
+      onClose();
+    }
   };
 
   const handleSubmitScore = async (score) => {
-    if (!GAMES_CONTRACT_ADDRESS) {
-      setSubmitError('Contract address is not defined');
-      return;
-    }
-
+    if (!score) return;
+    
+    setSubmitError(null);
+    
     try {
-      const hash = await writeContract({
-        address: GAMES_CONTRACT_ADDRESS,
-        abi: gamesABI,
-        functionName: 'submitScore',
-        args: [FRUIT_NINJA_GAME_ID, score],
-      });
-      
-      console.log('Transaction Hash:', hash); // Log the transaction hash
-      
-      // Wait for confirmation using the useWaitForTransactionReceipt hook
-      // The dialog will close automatically when isConfirmed becomes true
+      if (isBattleMode && onSubmitScore) {
+        await onSubmitScore(score);
+      } else if (GAMES_CONTRACT_ADDRESS) {
+        const hash = await writeContract({
+          address: GAMES_CONTRACT_ADDRESS,
+          abi: gamesABI,
+          functionName: 'submitScore',
+          args: [FRUIT_NINJA_GAME_ID, score],
+        });
+        console.log('Transaction Hash:', hash);
+      } else {
+        throw new Error('Contract address is not defined');
+      }
     } catch (error) {
       console.error('Error submitting score:', error);
       setSubmitError(error.message || 'Failed to submit score. Please try again.');
@@ -451,7 +460,7 @@ export default function FruitNinja({ showLeaderboard = false }) {
   return (
     <div className="relative flex items-start p-8 max-w-[1400px] mx-auto gap-10">
       {!isGameStarted ? (
-        // Start Game Screen with Leaderboard
+        // Start Game Screen
         <div className="w-full flex gap-10">
           <div className="flex-1 flex items-center justify-center min-h-[600px]">
             <button
@@ -464,15 +473,15 @@ export default function FruitNinja({ showLeaderboard = false }) {
             </button>
           </div>
 
-          {/* Show leaderboard if enabled */}
-          {showLeaderboard && (
+          {/* Show leaderboard only in non-battle mode */}
+          {showLeaderboard && !isBattleMode && (
             <div className="min-w-[320px]">
               <LeaderboardComponent />
             </div>
           )}
         </div>
       ) : (
-        // Game Screen - with game and leaderboard side by side
+        // Game Screen
         <>
           {/* Game viewport container */}
           <div className="relative flex-1 rounded-2xl overflow-hidden shadow-lg">
@@ -488,12 +497,10 @@ export default function FruitNinja({ showLeaderboard = false }) {
             />
           </div>
 
-          {/* Leaderboard and Stats on the right */}
-          {showLeaderboard && (
+          {/* Show stats and leaderboard only in non-battle mode */}
+          {showLeaderboard && !isBattleMode && (
             <div className="min-w-[320px] flex flex-col gap-4">
-              {/* Game stats */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Score card */}
                 <div className="aspect-square p-4 bg-white rounded-xl shadow-md flex flex-col items-center justify-center">
                   <h2 className="text-sm font-medium uppercase tracking-wider text-gray-600 mb-1">
                     Score
@@ -503,7 +510,6 @@ export default function FruitNinja({ showLeaderboard = false }) {
                   </div>
                 </div>
 
-                {/* Lives card */}
                 <div className="aspect-square p-4 bg-white rounded-xl shadow-md flex flex-col items-center justify-center">
                   <h2 className="text-sm font-medium uppercase tracking-wider text-gray-600 mb-1">
                     Lives
@@ -516,27 +522,44 @@ export default function FruitNinja({ showLeaderboard = false }) {
                 </div>
               </div>
 
-              {/* Leaderboard */}
               <LeaderboardComponent />
+            </div>
+          )}
+
+          {/* Battle mode score display */}
+          {isBattleMode && (
+            <div className="absolute top-4 right-4 bg-white/90 rounded-xl p-4 shadow-lg">
+              <div className="text-sm font-medium text-gray-600">Score</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {score.toLocaleString()}
+              </div>
+              <div className="mt-2 text-sm font-medium text-gray-600">Lives</div>
+              <div className={`text-2xl font-bold ${
+                lives > 1 ? 'text-gray-900' : 'text-red-500'
+              }`}>
+                {lives}
+              </div>
             </div>
           )}
         </>
       )}
 
-      {/* Game Over Modal - existing code */}
+      {/* Game Over Modal */}
       {isGameOver && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
           <div className="bg-white rounded-3xl p-10 text-center max-w-[400px] w-[90%] shadow-2xl relative">
-            {/* Close button */}
-            <button 
-              onClick={closeGame}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-              disabled={isSubmitting}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {/* Close button - only show in non-battle mode */}
+            {!isBattleMode && (
+              <button 
+                onClick={closeGame}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                disabled={isSubmitting}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
             
             <h2 className="mb-2 text-3xl font-semibold text-gray-900">
               Game Over!
@@ -555,12 +578,10 @@ export default function FruitNinja({ showLeaderboard = false }) {
             <div className="flex flex-col gap-4">
               <button 
                 onClick={async () => {
-                  setSubmitError(null);
                   try {
                     await handleSubmitScore(finalScore);
-                    // closeGame is called after transaction confirmation in handleSubmitScore
                   } catch (error) {
-                    // Error is already handled in handleSubmitScore
+                    // Error is handled in handleSubmitScore
                   }
                 }}
                 disabled={isSubmitting}
