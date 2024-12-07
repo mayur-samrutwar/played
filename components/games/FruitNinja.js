@@ -1,8 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as poseDetection from '@tensorflow-models/pose-detection';
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import gamesABI from '../../contract/abi/games.json';
+
+const GAMES_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAMES_CONTRACT_ADDRESS_BASE;
+const FRUIT_NINJA_GAME_ID = 0;
 
 export default function FruitNinja({ showLeaderboard = false }) {
+  const { writeContract, data: hash } = useWriteContract();
+  const { 
+    isLoading: isSubmitting,
+    isSuccess: isConfirmed,
+  } = useWaitForTransactionReceipt({
+    hash,
+  });
+  
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [score, setScore] = useState(0);
@@ -15,6 +28,7 @@ export default function FruitNinja({ showLeaderboard = false }) {
   const [backgroundMusic] = useState(new Audio('/sounds/game-music.mp3'));
   const [sliceSound] = useState(new Audio('/sounds/slice.wav'));
   const [isGameStarted, setIsGameStarted] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const createBall = () => {
     const radius = 20;
@@ -222,6 +236,38 @@ export default function FruitNinja({ showLeaderboard = false }) {
     }
   };
 
+  const handleSubmitScore = async (score) => {
+    if (!GAMES_CONTRACT_ADDRESS) {
+      setSubmitError('Contract address is not defined');
+      return;
+    }
+
+    try {
+      const hash = await writeContract({
+        address: GAMES_CONTRACT_ADDRESS,
+        abi: gamesABI,
+        functionName: 'submitScore',
+        args: [FRUIT_NINJA_GAME_ID, score],
+      });
+      
+      console.log('Transaction Hash:', hash); // Log the transaction hash
+      
+      // Wait for confirmation using the useWaitForTransactionReceipt hook
+      // The dialog will close automatically when isConfirmed becomes true
+    } catch (error) {
+      console.error('Error submitting score:', error);
+      setSubmitError(error.message || 'Failed to submit score. Please try again.');
+    }
+  };
+
+  // Add effect to handle transaction confirmation
+  useEffect(() => {
+    if (isConfirmed) {
+      console.log('Transaction confirmed with hash:', hash);
+      closeGame();
+    }
+  }, [isConfirmed, hash]);
+
   useEffect(() => {
     if (!isGameStarted) return;
 
@@ -348,6 +394,60 @@ export default function FruitNinja({ showLeaderboard = false }) {
     }
   }, [lives, score, backgroundMusic]);
 
+  const LeaderboardComponent = () => (
+    <div className="flex flex-col bg-white rounded-3xl p-8 shadow-lg h-full">
+      <h2 className="mb-6 text-2xl font-semibold text-gray-900">
+        Global Leaderboard
+      </h2>
+
+      {/* Header */}
+      <div className="flex items-center px-4 py-2 text-sm font-medium text-gray-500 border-b border-gray-200">
+        <div className="w-12">#</div>
+        <div className="flex-1">Player</div>
+        <div className="w-24 text-right">Score</div>
+      </div>
+
+      {/* Leaderboard entries */}
+      <div className="flex flex-col">
+        {[
+          { rank: 1, address: '0x1234...5678', score: 2547 },
+          { rank: 2, address: '0x8765...4321', score: 2123 },
+          { rank: 3, address: '0x9876...1234', score: 1987 },
+          { rank: 4, address: '0x4567...8901', score: 1654 },
+          { rank: 5, address: '0x3456...7890', score: 1432 }
+        ].map((entry) => (
+          <div
+            key={entry.rank}
+            className={`flex items-center p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+              entry.rank === 1 ? 'bg-amber-50 hover:bg-amber-100' : ''
+            }`}
+          >
+            <div className="w-12">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                entry.rank === 1 ? 'bg-yellow-400 text-white' :
+                entry.rank === 2 ? 'bg-gray-300 text-white' :
+                entry.rank === 3 ? 'bg-amber-700 text-white' :
+                'bg-gray-100 text-gray-600'
+              }`}>
+                {entry.rank}
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="text-base font-medium text-gray-900">
+                {entry.address}
+              </div>
+            </div>
+            <div className="w-24 text-right">
+              <div className="text-lg font-semibold text-gray-900">
+                {entry.score.toLocaleString()}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="relative flex items-start p-8 max-w-[1400px] mx-auto gap-10">
       {!isGameStarted ? (
@@ -364,7 +464,7 @@ export default function FruitNinja({ showLeaderboard = false }) {
             </button>
           </div>
 
-          {/* Show leaderboard */}
+          {/* Show leaderboard if enabled */}
           {showLeaderboard && (
             <div className="min-w-[320px]">
               <LeaderboardComponent />
@@ -372,7 +472,7 @@ export default function FruitNinja({ showLeaderboard = false }) {
           )}
         </div>
       ) : (
-        // Game Screen
+        // Game Screen - with game and leaderboard side by side
         <>
           {/* Game viewport container */}
           <div className="relative flex-1 rounded-2xl overflow-hidden shadow-lg">
@@ -388,47 +488,50 @@ export default function FruitNinja({ showLeaderboard = false }) {
             />
           </div>
 
-          {/* Right side container */}
-          <div className="flex flex-col gap-6 min-w-[320px]">
-            {/* Stats container */}
-            <div className="flex gap-4">
-              {/* Score card */}
-              <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
-                <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
-                  Score
-                </h2>
-                <div className="text-3xl font-semibold text-gray-900 leading-none">
-                  {score}
+          {/* Leaderboard and Stats on the right */}
+          {showLeaderboard && (
+            <div className="min-w-[320px] flex flex-col gap-4">
+              {/* Game stats */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Score card */}
+                <div className="aspect-square p-4 bg-white rounded-xl shadow-md flex flex-col items-center justify-center">
+                  <h2 className="text-sm font-medium uppercase tracking-wider text-gray-600 mb-1">
+                    Score
+                  </h2>
+                  <div className="text-3xl font-semibold text-gray-900">
+                    {score.toLocaleString()}
+                  </div>
+                </div>
+
+                {/* Lives card */}
+                <div className="aspect-square p-4 bg-white rounded-xl shadow-md flex flex-col items-center justify-center">
+                  <h2 className="text-sm font-medium uppercase tracking-wider text-gray-600 mb-1">
+                    Lives
+                  </h2>
+                  <div className={`text-3xl font-semibold ${
+                    lives > 1 ? 'text-gray-900' : 'text-red-500'
+                  }`}>
+                    {lives}
+                  </div>
                 </div>
               </div>
 
-              {/* Lives card */}
-              <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
-                <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
-                  Lives
-                </h2>
-                <div className={`text-3xl font-semibold leading-none ${
-                  lives > 1 ? 'text-gray-900' : 'text-red-500'
-                }`}>
-                  {lives}
-                </div>
-              </div>
+              {/* Leaderboard */}
+              <LeaderboardComponent />
             </div>
-
-            {/* Show leaderboard */}
-            {showLeaderboard && <LeaderboardComponent />}
-          </div>
+          )}
         </>
       )}
 
-      {/* Modified Game Over Modal */}
+      {/* Game Over Modal - existing code */}
       {isGameOver && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
           <div className="bg-white rounded-3xl p-10 text-center max-w-[400px] w-[90%] shadow-2xl relative">
-            {/* Add close button */}
+            {/* Close button */}
             <button 
               onClick={closeGame}
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              disabled={isSubmitting}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -440,27 +543,63 @@ export default function FruitNinja({ showLeaderboard = false }) {
             </h2>
             
             <p className="mb-8 text-lg text-gray-600">
-              Final Score: {finalScore}
+              Final Score: {finalScore.toLocaleString()}
             </p>
+            
+            {submitError && (
+              <p className="mb-4 text-sm text-red-600">
+                {submitError}
+              </p>
+            )}
             
             <div className="flex flex-col gap-4">
               <button 
-                onClick={() => {/* Add submit score logic */}}
-                className="bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                onClick={async () => {
+                  setSubmitError(null);
+                  try {
+                    await handleSubmitScore(finalScore);
+                    // closeGame is called after transaction confirmation in handleSubmitScore
+                  } catch (error) {
+                    // Error is already handled in handleSubmitScore
+                  }
+                }}
+                disabled={isSubmitting}
+                className={`
+                  bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
                   cursor-pointer transition-all duration-200 outline-none
-                  hover:bg-blue-700 active:scale-[0.98]"
+                  hover:bg-blue-700 active:scale-[0.98]
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  flex items-center justify-center
+                `}
               >
-                Submit Score
+                {isSubmitting ? (
+                  <>
+                    <svg 
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24"
+                    >
+                      <circle 
+                        className="opacity-25" 
+                        cx="12" 
+                        cy="12" 
+                        r="10" 
+                        stroke="currentColor" 
+                        strokeWidth="4"
+                      />
+                      <path 
+                        className="opacity-75" 
+                        fill="currentColor" 
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Submitting Score...
+                  </>
+                ) : (
+                  'Submit Score'
+                )}
               </button>
-{/*               
-              <button 
-                onClick={resetGame}
-                className="bg-gray-900 text-white rounded-xl px-8 py-4 text-lg font-medium
-                  cursor-pointer transition-all duration-200 outline-none
-                  hover:bg-gray-700 active:scale-[0.98]"
-              >
-                Play Again
-              </button> */}
             </div>
           </div>
         </div>
@@ -468,46 +607,3 @@ export default function FruitNinja({ showLeaderboard = false }) {
     </div>
   );
 }
-
-// Helper component to avoid repetition
-const LeaderboardComponent = () => (
-  <div className="flex flex-col bg-white rounded-3xl p-8 shadow-lg">
-    <h2 className="mb-6 text-2xl font-semibold text-gray-900">
-      Global Leaderboard
-    </h2>
-
-    <div className="flex flex-col gap-3">
-      {[
-        { rank: 1, address: '0x1234...5678', score: 2547 },
-        { rank: 2, address: '0x8765...4321', score: 2123 },
-        { rank: 3, address: '0x9876...1234', score: 1987 },
-        { rank: 4, address: '0x4567...8901', score: 1654 },
-        { rank: 5, address: '0x3456...7890', score: 1432 }
-      ].map((entry) => (
-        <div
-          key={entry.rank}
-          className={`flex items-center p-4 rounded-xl border border-gray-200 ${
-            entry.rank === 1 ? 'bg-amber-50' : 'bg-transparent'
-          }`}
-        >
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-            entry.rank === 1 ? 'bg-yellow-400 text-white' :
-            entry.rank === 2 ? 'bg-gray-300 text-white' :
-            entry.rank === 3 ? 'bg-amber-700 text-white' :
-            'bg-gray-100 text-gray-600'
-          }`}>
-            {entry.rank}
-          </div>
-          <div className="ml-4 flex-1">
-            <div className="text-base font-medium text-gray-900 mb-1">
-              {entry.address}
-            </div>
-            <div className="text-sm text-gray-600">
-              Score: {entry.score}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
