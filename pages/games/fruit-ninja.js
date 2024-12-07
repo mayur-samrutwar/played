@@ -6,5 +6,5 @@ const FruitNinja = dynamic(() => import('@/components/games/FruitNinja'), {
 });
 
 export default function FruitNinjaPage() {
-  return <FruitNinja />;
+  return <FruitNinja showLeaderboard={true} />;
 }

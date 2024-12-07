@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as poseDetection from '@tensorflow-models/pose-detection';
 
-export default function FruitNinja() {
+export default function FruitNinja({ showLeaderboard = false }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [score, setScore] = useState(0);
@@ -315,159 +315,133 @@ export default function FruitNinja() {
   }, [isGameOver, backgroundMusic]);
 
   return (
-    <div style={{ 
-      position: 'relative', 
-      display: 'flex', 
-      alignItems: 'flex-start',
-      padding: '32px',
-      maxWidth: '1400px',
-      margin: '0 auto',
-      gap: '40px'
-    }}>
+    <div className="relative flex items-start p-8 max-w-[1400px] mx-auto gap-10">
       {/* Game viewport container */}
-      <div style={{ 
-        position: 'relative',
-        flex: '1',
-        borderRadius: '24px',
-        overflow: 'hidden',
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)'
-      }}>
+      <div className="relative flex-1 rounded-2xl overflow-hidden shadow-lg">
         <video
           ref={videoRef}
-          style={{
-            transform: 'scaleX(-1)',
-            WebkitTransform: 'scaleX(-1)',
-            width: '100%',
-            height: 'auto',
-            display: 'block'
-          }}
+          className="w-full h-auto block scale-x-[-1]"
           autoPlay
           playsInline
         />
         <canvas
           ref={canvasRef}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            transform: 'scaleX(-1)',
-            WebkitTransform: 'scaleX(-1)',
-            width: '100%',
-            height: '100%'
-          }}
+          className="absolute top-0 left-0 w-full h-full scale-x-[-1]"
         />
       </div>
 
-      {/* Game stats container */}
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '24px',
-        minWidth: '280px'
-      }}>
-        {/* Score card */}
-        <div style={{
-          padding: '32px',
-          backgroundColor: 'white',
-          borderRadius: '20px',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ 
-            margin: '0 0 16px 0',
-            fontSize: '18px',
-            fontWeight: '500',
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-            color: '#666'
-          }}>Score</h2>
-          <div style={{ 
-            fontSize: '48px', 
-            fontWeight: '600',
-            color: '#111',
-            lineHeight: '1'
-          }}>{score}</div>
-        </div>
+      {/* Right side container */}
+      {showLeaderboard ? (
+        <div className="flex flex-col gap-6 min-w-[320px]">
+          {/* Stats container */}
+          <div className="flex gap-4">
+            {/* Score card */}
+            <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
+              <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
+                Score
+              </h2>
+              <div className="text-3xl font-semibold text-gray-900 leading-none">
+                {score}
+              </div>
+            </div>
 
-        {/* Lives card */}
-        <div style={{
-          padding: '32px',
-          backgroundColor: 'white',
-          borderRadius: '20px',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
-          textAlign: 'center'
-        }}>
-          <h2 style={{ 
-            margin: '0 0 16px 0',
-            fontSize: '18px',
-            fontWeight: '500',
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-            color: '#666'
-          }}>Lives</h2>
-          <div style={{ 
-            fontSize: '48px', 
-            fontWeight: '600',
-            color: lives > 1 ? '#111' : '#ff4444',
-            lineHeight: '1'
-          }}>{lives}</div>
+            {/* Lives card */}
+            <div className="flex-1 p-6 bg-white rounded-2xl shadow-md text-center">
+              <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-gray-600">
+                Lives
+              </h2>
+              <div className={`text-3xl font-semibold leading-none ${
+                lives > 1 ? 'text-gray-900' : 'text-red-500'
+              }`}>
+                {lives}
+              </div>
+            </div>
+          </div>
+
+          {/* Leaderboard */}
+          <div className="flex flex-col bg-white rounded-3xl p-8 shadow-lg">
+            <h2 className="mb-6 text-2xl font-semibold text-gray-900">
+              Global Leaderboard
+            </h2>
+
+            {/* Leaderboard List */}
+            <div className="flex flex-col gap-3">
+              {[
+                { rank: 1, address: '0x1234...5678', score: 2547 },
+                { rank: 2, address: '0x8765...4321', score: 2123 },
+                { rank: 3, address: '0x9876...1234', score: 1987 },
+                { rank: 4, address: '0x4567...8901', score: 1654 },
+                { rank: 5, address: '0x3456...7890', score: 1432 }
+              ].map((entry) => (
+                <div
+                  key={entry.rank}
+                  className={`flex items-center p-4 rounded-xl border border-gray-200 ${
+                    entry.rank === 1 ? 'bg-amber-50' : 'bg-transparent'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                    entry.rank === 1 ? 'bg-yellow-400 text-white' :
+                    entry.rank === 2 ? 'bg-gray-300 text-white' :
+                    entry.rank === 3 ? 'bg-amber-700 text-white' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {entry.rank}
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <div className="text-base font-medium text-gray-900 mb-1">
+                      {entry.address}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Score: {entry.score}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col gap-6 min-w-[280px]">
+          {/* Original score and lives cards */}
+          <div className="p-8 bg-white rounded-2xl shadow-md text-center">
+            <h2 className="mb-4 text-lg font-medium uppercase tracking-wider text-gray-600">
+              Score
+            </h2>
+            <div className="text-5xl font-semibold text-gray-900 leading-none">
+              {score}
+            </div>
+          </div>
+
+          <div className="p-8 bg-white rounded-2xl shadow-md text-center">
+            <h2 className="mb-4 text-lg font-medium uppercase tracking-wider text-gray-600">
+              Lives
+            </h2>
+            <div className={`text-5xl font-semibold leading-none ${
+              lives > 1 ? 'text-gray-900' : 'text-red-500'
+            }`}>
+              {lives}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Game Over Modal */}
       {isGameOver && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '24px',
-            padding: '40px',
-            textAlign: 'center',
-            maxWidth: '400px',
-            width: '90%',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)'
-          }}>
-            <h2 style={{
-              margin: '0 0 8px 0',
-              fontSize: '32px',
-              fontWeight: '600',
-              color: '#111'
-            }}>Game Over!</h2>
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-10 text-center max-w-[400px] w-[90%] shadow-2xl">
+            <h2 className="mb-2 text-3xl font-semibold text-gray-900">
+              Game Over!
+            </h2>
             
-            <p style={{
-              margin: '0 0 32px 0',
-              fontSize: '18px',
-              color: '#666'
-            }}>Final Score: {finalScore}</p>
+            <p className="mb-8 text-lg text-gray-600">
+              Final Score: {finalScore}
+            </p>
             
             <button 
               onClick={resetGame}
-              style={{
-                backgroundColor: '#111',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '16px 32px',
-                fontSize: '18px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'transform 0.1s ease-in-out, background-color 0.2s ease',
-                outline: 'none'
-              }}
-              onMouseEnter={e => e.target.style.backgroundColor = '#333'}
-              onMouseLeave={e => e.target.style.backgroundColor = '#111'}
-              onMouseDown={e => e.target.style.transform = 'scale(0.98)'}
-              onMouseUp={e => e.target.style.transform = 'scale(1)'}
+              className="bg-gray-900 text-white rounded-xl px-8 py-4 text-lg font-medium
+                cursor-pointer transition-all duration-200 outline-none
+                hover:bg-gray-700 active:scale-[0.98]"
             >
               Play Again
             </button>
