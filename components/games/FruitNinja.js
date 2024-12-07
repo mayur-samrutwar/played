@@ -10,6 +10,8 @@ export default function FruitNinja() {
   const animationFrameRef = useRef();
   const zapsRef = useRef([]);
   const [lives, setLives] = useState(3);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
 
   const createBall = () => {
     const radius = 20;
@@ -106,7 +108,16 @@ export default function FruitNinja() {
         // Remove ball and reduce lives when it touches bottom
         if (ball.y > canvasRef.current.height + ball.radius) {
           balls.splice(i, 1);
-          setLives(prev => Math.max(0, prev - 1));
+          setLives(prev => {
+            const newLives = Math.max(0, prev - 1);
+            if (newLives === 0) {
+              setIsGameOver(true);
+              setFinalScore(score);
+              // Clear all balls when game is over
+              ballsRef.current = [];
+            }
+            return newLives;
+          });
         }
       }
     }
@@ -159,6 +170,14 @@ export default function FruitNinja() {
         zaps.splice(i, 1);
       }
     }
+  };
+
+  const resetGame = () => {
+    setLives(3);
+    setScore(0);
+    setIsGameOver(false);
+    ballsRef.current = [];
+    zapsRef.current = [];
   };
 
   useEffect(() => {
@@ -249,16 +268,31 @@ export default function FruitNinja() {
   }, []);
 
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start' }}>
-      <div style={{ position: 'relative' }}>
+    <div style={{ 
+      position: 'relative', 
+      display: 'flex', 
+      alignItems: 'flex-start',
+      padding: '32px',
+      maxWidth: '1400px',
+      margin: '0 auto',
+      gap: '40px'
+    }}>
+      {/* Game viewport container */}
+      <div style={{ 
+        position: 'relative',
+        flex: '1',
+        borderRadius: '24px',
+        overflow: 'hidden',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)'
+      }}>
         <video
           ref={videoRef}
           style={{
             transform: 'scaleX(-1)',
             WebkitTransform: 'scaleX(-1)',
             width: '100%',
-            maxWidth: '1000px',
-            height: 'auto'
+            height: 'auto',
+            display: 'block'
           }}
           autoPlay
           playsInline
@@ -272,33 +306,127 @@ export default function FruitNinja() {
             transform: 'scaleX(-1)',
             WebkitTransform: 'scaleX(-1)',
             width: '100%',
-            maxWidth: '1000px',
-            height: 'auto'
+            height: '100%'
           }}
         />
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+      {/* Game stats container */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '24px',
+        minWidth: '280px'
+      }}>
+        {/* Score card */}
         <div style={{
-          marginLeft: '20px',
-          padding: '20px',
-          backgroundColor: '#f5f5f5',
-          borderRadius: '8px',
-          minWidth: '200px'
+          padding: '32px',
+          backgroundColor: 'white',
+          borderRadius: '20px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
+          textAlign: 'center'
         }}>
-          <h2 style={{ margin: '0 0 10px 0' }}>Score</h2>
-          <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{score}</div>
+          <h2 style={{ 
+            margin: '0 0 16px 0',
+            fontSize: '18px',
+            fontWeight: '500',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            color: '#666'
+          }}>Score</h2>
+          <div style={{ 
+            fontSize: '48px', 
+            fontWeight: '600',
+            color: '#111',
+            lineHeight: '1'
+          }}>{score}</div>
         </div>
+
+        {/* Lives card */}
         <div style={{
-          marginLeft: '20px',
-          padding: '20px',
-          backgroundColor: '#f5f5f5',
-          borderRadius: '8px',
-          minWidth: '200px'
+          padding: '32px',
+          backgroundColor: 'white',
+          borderRadius: '20px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
+          textAlign: 'center'
         }}>
-          <h2 style={{ margin: '0 0 10px 0' }}>Lives</h2>
-          <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{lives}</div>
+          <h2 style={{ 
+            margin: '0 0 16px 0',
+            fontSize: '18px',
+            fontWeight: '500',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            color: '#666'
+          }}>Lives</h2>
+          <div style={{ 
+            fontSize: '48px', 
+            fontWeight: '600',
+            color: lives > 1 ? '#111' : '#ff4444',
+            lineHeight: '1'
+          }}>{lives}</div>
         </div>
       </div>
+
+      {/* Game Over Modal */}
+      {isGameOver && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '24px',
+            padding: '40px',
+            textAlign: 'center',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)'
+          }}>
+            <h2 style={{
+              margin: '0 0 8px 0',
+              fontSize: '32px',
+              fontWeight: '600',
+              color: '#111'
+            }}>Game Over!</h2>
+            
+            <p style={{
+              margin: '0 0 32px 0',
+              fontSize: '18px',
+              color: '#666'
+            }}>Final Score: {finalScore}</p>
+            
+            <button 
+              onClick={resetGame}
+              style={{
+                backgroundColor: '#111',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '16px 32px',
+                fontSize: '18px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'transform 0.1s ease-in-out, background-color 0.2s ease',
+                outline: 'none'
+              }}
+              onMouseEnter={e => e.target.style.backgroundColor = '#333'}
+              onMouseLeave={e => e.target.style.backgroundColor = '#111'}
+              onMouseDown={e => e.target.style.transform = 'scale(0.98)'}
+              onMouseUp={e => e.target.style.transform = 'scale(1)'}
+            >
+              Play Again
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
