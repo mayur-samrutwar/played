@@ -8,39 +8,85 @@ export default function Games() {
       name: 'Fruit Ninja',
       description: 'Slice your way through juicy fruits while avoiding bombs in this classic arcade game. Test your reflexes and aim for the highest score!',
       link: '/games/fruit-ninja',
-      imageUrl: '/images/fruit-ninja-poster.jpg'
+      imageUrl: '/games/fruit-ninja.png',
+      category: 'Arcade'
     },
     {
       id: 2,
-      name: 'Save the Cats',
-      description: 'Help rescue adorable cats from tricky situations in this puzzle adventure. Use your problem-solving skills to ensure every kitty gets home safely!',
-      link: '/games/save-the-cats',
-      imageUrl: '/images/save-cats-poster.jpg'
+      name: 'Dino Run',
+      description: 'Jump and dodge obstacles in this endless runner. Help our prehistoric friend survive as long as possible!',
+      link: '/games/dino',
+      imageUrl: '/games/dino.png',
+      category: 'Runner'
+    },
+    {
+      id: 3,
+      name: 'Plank Challenge',
+      description: 'Test your balance and timing in this addictive platformer. How far can you make it?',
+      link: '/games/plank',
+      imageUrl: '/games/plank.png',
+      category: 'Platform'
     }
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Games</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {games.map((game) => (
-          <Link href={game.link} key={game.id}>
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-              <div className="relative h-48">
-                <Image
-                  src={game.imageUrl}
-                  alt={game.name}
-                  layout="fill"
-                  objectFit="cover"
-                />
+    <div className="min-h-screen white py-12 px-4">
+      <div className="container mx-auto max-w-6xl">
+        <h1 className="text-4xl font-bold mb-3 text-gray-900 text-center">Games</h1>
+        <p className="text-gray-600 text-center mb-12 text-lg">Choose your adventure from our collection of games</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {games.map((game) => (
+            <Link href={game.link} key={game.id}>
+              <div className="group bg-white rounded-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-xl border border-gray-100">
+                <div className="relative h-56">
+                  <Image
+                    src={game.imageUrl}
+                    alt={game.name}
+                    layout="fill"
+                    objectFit="cover"
+                    className="transition-transform duration-300 group-hover:scale-110"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <span className="px-3 py-1 bg-white/90 text-sm text-gray-700 rounded-full font-medium shadow-sm">
+                      {game.category}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h2 className="text-2xl font-bold mb-2 text-gray-900 group-hover:text-blue-600 transition-colors">
+                    {game.name}
+                  </h2>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {game.description}
+                  </p>
+                  <div className="mt-6 flex items-center">
+                    <button className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium text-sm 
+                      transition-all duration-300 
+                      hover:bg-blue-100 hover:shadow-md 
+                      active:bg-blue-200 
+                      group-hover:translate-x-1">
+                      Play Now
+                      <svg 
+                        className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M9 5l7 7-7 7" 
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="p-4">
-                <h2 className="text-xl font-semibold mb-2">{game.name}</h2>
-                <p className="text-gray-600">{game.description}</p>
-              </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
