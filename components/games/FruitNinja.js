@@ -3,6 +3,7 @@ import * as tf from '@tensorflow/tfjs';
 import * as poseDetection from '@tensorflow-models/pose-detection';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import gamesABI from '../../contract/abi/games.json';
+import Image from 'next/image';
 
 const GAMES_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAMES_CONTRACT_ADDRESS_BASE;
 const FRUIT_NINJA_GAME_ID = 0;
@@ -34,6 +35,8 @@ export default function FruitNinja({
   const [sliceSound] = useState(new Audio('/sounds/slice.wav'));
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [gameMode, setGameMode] = useState(null); // 'free' or 'earn'
+  const [showEarnDialog, setShowEarnDialog] = useState(false);
 
   const createBall = () => {
     const radius = 20;
@@ -457,6 +460,176 @@ export default function FruitNinja({
     </div>
   );
 
+  // Add this new component for the earn dialog
+  const EarnDialog = () => (
+    <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
+      <div className="bg-white rounded-3xl p-10 max-w-[500px] w-[90%] shadow-2xl relative">
+        <button 
+          onClick={() => setShowEarnDialog(false)}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="flex items-center gap-4 mb-6">
+          <span className="px-3 py-1 bg-blue-700 text-white rounded-full text-sm">Reward Challenge</span>
+          <Image 
+            src="/Base_Network_Logo.svg"
+            alt="Challenge Icon"
+            width={40}
+            height={40}
+          />
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Base Ninja Master</h2>
+        <p className="text-gray-600 mb-6">
+          Earn 0.00025 ETH for every 100 points you score in Base Ninja game!
+        </p>
+
+        <div className="flex justify-between items-center mb-8">
+          <span className="text-sm text-gray-600">Stake: 0.00025 ETH</span>
+        </div>
+
+        <button 
+          onClick={() => {
+            setShowEarnDialog(false);
+            setGameMode('earn');
+            setIsGameStarted(true);
+          }}
+          className="w-full bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+            cursor-pointer transition-all duration-200 outline-none
+            hover:bg-blue-700 active:scale-[0.98]"
+        >
+          Start Game
+        </button>
+      </div>
+    </div>
+  );
+
+  // Modify the start screen JSX
+  if (!isGameStarted) {
+    return (
+      <div className="relative flex items-start p-8 max-w-[1400px] mx-auto gap-10">
+        <div className="w-full flex gap-10">
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[600px] gap-4">
+            <button
+              onClick={() => {
+                setGameMode('free');
+                setIsGameStarted(true);
+              }}
+              className="bg-gray-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                cursor-pointer transition-all duration-200 outline-none
+                hover:bg-gray-700 active:scale-[0.98] w-48"
+            >
+              Play for Free
+            </button>
+            <button
+              onClick={() => setShowEarnDialog(true)}
+              className="bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                cursor-pointer transition-all duration-200 outline-none
+                hover:bg-blue-700 active:scale-[0.98] w-48"
+            >
+              Play to Earn
+            </button>
+          </div>
+
+          {showLeaderboard && !isBattleMode && (
+            <div className="min-w-[320px]">
+              <LeaderboardComponent />
+            </div>
+          )}
+        </div>
+
+        {showEarnDialog && <EarnDialog />}
+      </div>
+    );
+  }
+
+  // Modify the game over modal to only show submit button in earn mode
+  const GameOverModal = () => (
+    <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
+      <div className="bg-white rounded-3xl p-10 text-center max-w-[400px] w-[90%] shadow-2xl relative">
+        {!isBattleMode && (
+          <button 
+            onClick={closeGame}
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            disabled={isSubmitting}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        
+        <h2 className="mb-2 text-3xl font-semibold text-gray-900">
+          Game Over!
+        </h2>
+        
+        <p className="mb-8 text-lg text-gray-600">
+          Final Score: {finalScore.toLocaleString()}
+        </p>
+        
+        {submitError && (
+          <p className="mb-4 text-sm text-red-600">
+            {submitError}
+          </p>
+        )}
+        
+        {gameMode === 'earn' && (
+          <div className="flex flex-col gap-4">
+            <button 
+              onClick={async () => {
+                try {
+                  await handleSubmitScore(finalScore);
+                } catch (error) {
+                  // Error is handled in handleSubmitScore
+                }
+              }}
+              disabled={isSubmitting}
+              className={`
+                bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                cursor-pointer transition-all duration-200 outline-none
+                hover:bg-blue-700 active:scale-[0.98]
+                disabled:opacity-50 disabled:cursor-not-allowed
+                flex items-center justify-center
+              `}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg 
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24"
+                  >
+                    <circle 
+                      className="opacity-25" 
+                      cx="12" 
+                      cy="12" 
+                      r="10" 
+                      stroke="currentColor" 
+                      strokeWidth="4"
+                    />
+                    <path 
+                      className="opacity-75" 
+                      fill="currentColor" 
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Submitting Score...
+                </>
+              ) : (
+                'Submit Score'
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="relative flex items-start p-8 max-w-[1400px] mx-auto gap-10">
       {!isGameStarted ? (
@@ -546,84 +719,7 @@ export default function FruitNinja({
 
       {/* Game Over Modal */}
       {isGameOver && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-10 text-center max-w-[400px] w-[90%] shadow-2xl relative">
-            {/* Close button - only show in non-battle mode */}
-            {!isBattleMode && (
-              <button 
-                onClick={closeGame}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-                disabled={isSubmitting}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-            
-            <h2 className="mb-2 text-3xl font-semibold text-gray-900">
-              Game Over!
-            </h2>
-            
-            <p className="mb-8 text-lg text-gray-600">
-              Final Score: {finalScore.toLocaleString()}
-            </p>
-            
-            {submitError && (
-              <p className="mb-4 text-sm text-red-600">
-                {submitError}
-              </p>
-            )}
-            
-            <div className="flex flex-col gap-4">
-              <button 
-                onClick={async () => {
-                  try {
-                    await handleSubmitScore(finalScore);
-                  } catch (error) {
-                    // Error is handled in handleSubmitScore
-                  }
-                }}
-                disabled={isSubmitting}
-                className={`
-                  bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
-                  cursor-pointer transition-all duration-200 outline-none
-                  hover:bg-blue-700 active:scale-[0.98]
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  flex items-center justify-center
-                `}
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg 
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24"
-                    >
-                      <circle 
-                        className="opacity-25" 
-                        cx="12" 
-                        cy="12" 
-                        r="10" 
-                        stroke="currentColor" 
-                        strokeWidth="4"
-                      />
-                      <path 
-                        className="opacity-75" 
-                        fill="currentColor" 
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Submitting Score...
-                  </>
-                ) : (
-                  'Submit Score'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+        <GameOverModal />
       )}
     </div>
   );
