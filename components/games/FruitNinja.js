@@ -37,6 +37,7 @@ export default function FruitNinja({
   const [submitError, setSubmitError] = useState(null);
   const [gameMode, setGameMode] = useState(null); // 'free' or 'earn'
   const [showEarnDialog, setShowEarnDialog] = useState(false);
+  const earnAnimationsRef = useRef([]);
 
   const createBall = () => {
     const radius = 20;
@@ -63,6 +64,15 @@ export default function FruitNinja({
         angle: angle + (Math.random() - 0.5) * 0.8, // Spread particles in a cone
         size: Math.random() * 4 + 2
       }))
+    };
+  };
+
+  const createEarnAnimation = (x, y) => {
+    return {
+      x,
+      y,
+      opacity: 1,
+      offsetY: 0
     };
   };
 
@@ -151,9 +161,14 @@ export default function FruitNinja({
           collision = true;
           const angle = Math.atan2(dy, dx);
           zaps.push(createZap(ball.x, ball.y, angle));
+          
+          if (gameMode === 'earn') {
+            earnAnimationsRef.current.push(createEarnAnimation(ball.x, ball.y));
+          }
+          
           balls.splice(i, 1);
           setScore(prev => prev + 1);
-          sliceSound.currentTime = 0; // Reset sound to start
+          sliceSound.currentTime = 0;
           sliceSound.play().catch(e => console.log('Audio play failed:', e));
           return;
         }
@@ -173,6 +188,8 @@ export default function FruitNinja({
 
     // Draw zap effects
     drawZaps(ctx, zaps);
+
+    drawEarnAnimations(ctx);
   };
 
   const drawZaps = (ctx, zaps) => {
@@ -221,6 +238,33 @@ export default function FruitNinja({
     }
   };
 
+  const drawEarnAnimations = (ctx) => {
+    const animations = earnAnimationsRef.current;
+    
+    for (let i = animations.length - 1; i >= 0; i--) {
+      const anim = animations[i];
+      
+      // Draw the text with a flip
+      ctx.save();
+      ctx.font = 'bold 16px Arial';
+      ctx.fillStyle = `rgba(0, 82, 255, ${anim.opacity})`; // Changed to Base blue (#0052FF)
+      ctx.textAlign = 'center';
+      ctx.translate(anim.x, anim.y - anim.offsetY);
+      ctx.scale(-1, 1); // This flips the text horizontally
+      ctx.fillText('+0.0000025 ETH', 0, 0);
+      ctx.restore();
+
+      // Update animation
+      anim.opacity -= 0.02;
+      anim.offsetY += 1;
+
+      // Remove animation when fully faded
+      if (anim.opacity <= 0) {
+        animations.splice(i, 1);
+      }
+    }
+  };
+
   const resetGame = () => {
     setLives(3);
     setScore(0);
@@ -228,6 +272,7 @@ export default function FruitNinja({
     setFinalScore(0);
     ballsRef.current = [];
     zapsRef.current = [];
+    earnAnimationsRef.current = [];
   };
 
   const closeGame = () => {
@@ -238,6 +283,7 @@ export default function FruitNinja({
     setFinalScore(0);
     ballsRef.current = [];
     zapsRef.current = [];
+    earnAnimationsRef.current = [];
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = videoRef.current.srcObject.getTracks();
       tracks.forEach(track => track.stop());
@@ -485,7 +531,7 @@ export default function FruitNinja({
 
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Base Ninja Master</h2>
         <p className="text-gray-600 mb-6">
-          Earn 0.00025 ETH for every 100 points you score in Base Ninja game!
+          Earn 0.0000025 ETH for every Base token you slice in the Base Ninja game!
         </p>
 
         <div className="flex justify-between items-center mb-8">
@@ -567,9 +613,15 @@ export default function FruitNinja({
           Game Over!
         </h2>
         
-        <p className="mb-8 text-lg text-gray-600">
+        <p className="mb-2 text-lg text-gray-600">
           Final Score: {finalScore.toLocaleString()}
         </p>
+
+        {gameMode === 'earn' && (
+          <p className="mb-8 text-lg text-blue-600 font-medium">
+            Total Earned: {(finalScore * 0.0000025).toFixed(7)} ETH
+          </p>
+        )}
         
         {submitError && (
           <p className="mb-4 text-sm text-red-600">
@@ -624,6 +676,9 @@ export default function FruitNinja({
                 'Submit Score'
               )}
             </button>
+            <p className="text-sm text-gray-500">
+              Submit your score to claim your ETH rewards
+            </p>
           </div>
         )}
       </div>
@@ -681,6 +736,11 @@ export default function FruitNinja({
                   <div className="text-3xl font-semibold text-gray-900">
                     {score.toLocaleString()}
                   </div>
+                  {gameMode === 'earn' && (
+                    <div className="text-sm font-medium text-blue-600 mt-1">
+                      {(score * 0.0000025).toFixed(7)} ETH
+                    </div>
+                  )}
                 </div>
 
                 <div className="aspect-square p-4 bg-white rounded-xl shadow-md flex flex-col items-center justify-center">
@@ -706,6 +766,11 @@ export default function FruitNinja({
               <div className="text-2xl font-bold text-gray-900">
                 {score.toLocaleString()}
               </div>
+              {gameMode === 'earn' && (
+                <div className="text-sm font-medium text-blue-600">
+                  {(score * 0.0000025).toFixed(7)} ETH
+                </div>
+              )}
               <div className="mt-2 text-sm font-medium text-gray-600">Lives</div>
               <div className={`text-2xl font-bold ${
                 lives > 1 ? 'text-gray-900' : 'text-red-500'
