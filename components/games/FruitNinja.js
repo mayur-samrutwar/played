@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as poseDetection from '@tensorflow-models/pose-detection';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import gamesABI from '../../contract/abi/games.json';
 import Image from 'next/image';
 import { parseEther } from 'viem';
@@ -44,6 +44,14 @@ export default function FruitNinja({
   const [txHash, setTxHash] = useState(null);
   const [isStaking, setIsStaking] = useState(false);
   const [stakeError, setStakeError] = useState(null);
+
+  const { data: leaderboardData } = useReadContract({
+    address: GAMES_CONTRACT_ADDRESS,
+    abi: gamesABI,
+    functionName: 'getGameLeaderboard',
+    args: [FRUIT_NINJA_GAME_ID],
+    watch: true,
+  });
 
   const createBall = () => {
     const radius = 20;
@@ -495,59 +503,81 @@ export default function FruitNinja({
     }
   }, [lives, score, backgroundMusic]);
 
-  const LeaderboardComponent = () => (
-    <div className="flex flex-col bg-white rounded-3xl p-8 shadow-lg h-full">
-      <h2 className="mb-6 text-2xl font-semibold text-gray-900">
-        Global Leaderboard
-      </h2>
+  const LeaderboardComponent = () => {
+    // Process and sort leaderboard data
+    const sortedLeaderboard = useMemo(() => {
+      if (!leaderboardData) return [];
+      
+      return [...leaderboardData]
+        .sort((a, b) => Number(b.score) - Number(a.score))
+        .slice(0, 5) // Get top 5 scores
+        .map((entry, index) => ({
+          rank: index + 1,
+          address: entry.player,
+          score: Number(entry.score),
+          timestamp: Number(entry.timestamp)
+        }));
+    }, [leaderboardData]);
 
-      {/* Header */}
-      <div className="flex items-center px-4 py-2 text-sm font-medium text-gray-500 border-b border-gray-200">
-        <div className="w-12">#</div>
-        <div className="flex-1">Player</div>
-        <div className="w-24 text-right">Score</div>
-      </div>
+    const formatAddress = (address) => {
+      if (!address) return '';
+      return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    };
 
-      {/* Leaderboard entries */}
-      <div className="flex flex-col">
-        {[
-          { rank: 1, address: '0x1234...5678', score: 2547 },
-          { rank: 2, address: '0x8765...4321', score: 2123 },
-          { rank: 3, address: '0x9876...1234', score: 1987 },
-          { rank: 4, address: '0x4567...8901', score: 1654 },
-          { rank: 5, address: '0x3456...7890', score: 1432 }
-        ].map((entry) => (
-          <div
-            key={entry.rank}
-            className={`flex items-center p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-              entry.rank === 1 ? 'bg-amber-50 hover:bg-amber-100' : ''
-            }`}
-          >
-            <div className="w-12">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                entry.rank === 1 ? 'bg-yellow-400 text-white' :
-                entry.rank === 2 ? 'bg-gray-300 text-white' :
-                entry.rank === 3 ? 'bg-amber-700 text-white' :
-                'bg-gray-100 text-gray-600'
-              }`}>
-                {entry.rank}
+    return (
+      <div className="flex flex-col bg-white rounded-3xl p-8 shadow-lg h-full">
+        <h2 className="mb-6 text-2xl font-semibold text-gray-900">
+          Global Leaderboard
+        </h2>
+
+        {/* Header */}
+        <div className="flex items-center px-4 py-2 text-sm font-medium text-gray-500 border-b border-gray-200">
+          <div className="w-12">#</div>
+          <div className="flex-1">Player</div>
+          <div className="w-24 text-right">Score</div>
+        </div>
+
+        {/* Leaderboard entries */}
+        <div className="flex flex-col">
+          {sortedLeaderboard.length > 0 ? (
+            sortedLeaderboard.map((entry) => (
+              <div
+                key={`${entry.address}-${entry.timestamp}`}
+                className={`flex items-center p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                  entry.rank === 1 ? 'bg-amber-50 hover:bg-amber-100' : ''
+                }`}
+              >
+                <div className="w-12">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                    entry.rank === 1 ? 'bg-yellow-400 text-white' :
+                    entry.rank === 2 ? 'bg-gray-300 text-white' :
+                    entry.rank === 3 ? 'bg-amber-700 text-white' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {entry.rank}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="text-base font-medium text-gray-900">
+                    {formatAddress(entry.address)}
+                  </div>
+                </div>
+                <div className="w-24 text-right">
+                  <div className="text-lg font-semibold text-gray-900">
+                    {entry.score.toLocaleString()}
+                  </div>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No scores recorded yet
             </div>
-            <div className="flex-1">
-              <div className="text-base font-medium text-gray-900">
-                {entry.address}
-              </div>
-            </div>
-            <div className="w-24 text-right">
-              <div className="text-lg font-semibold text-gray-900">
-                {entry.score.toLocaleString()}
-              </div>
-            </div>
-          </div>
-        ))}
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Add this new component for the earn dialog
   const EarnDialog = () => (
