@@ -7,7 +7,7 @@ import { decodeEventLog } from 'viem';
 
 export default function CreateBattle() {
   const [stakeAmount, setStakeAmount] = useState('');
-  const [friendAddress, setFriendAddress] = useState('');
+  const [friendAddress, setFriendAddress] = useState('0x0000000000000000000000000000000000000000');
   const [showTransactionDialog, setShowTransactionDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedGame, setSelectedGame] = useState('');

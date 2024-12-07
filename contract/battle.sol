@@ -11,6 +11,7 @@ contract BattleArena is ReentrancyGuard, Ownable {
     struct Battle {
         address player1;
         address player2;
+        address intendedPlayer2;
         uint256 stakeAmount;
         uint256 player1Score;
         uint256 player2Score;
@@ -30,13 +31,15 @@ contract BattleArena is ReentrancyGuard, Ownable {
     event ScoreSubmitted(uint256 battleId, address player, uint256 score);
 
     // Create a new battle
-    function createBattle() external payable nonReentrant returns (uint256) {
+    function createBattle(address intendedPlayer) external payable nonReentrant returns (uint256) {
         require(msg.value > 0, "Stake amount must be greater than 0");
+        require(intendedPlayer != msg.sender, "Cannot set yourself as intended player");
 
         uint256 battleId = nextBattleId++;
         Battle storage battle = battles[battleId];
         
         battle.player1 = msg.sender;
+        battle.intendedPlayer2 = intendedPlayer;
         battle.stakeAmount = msg.value;
         battle.hasPlayer1Registered = true;
 
@@ -53,6 +56,11 @@ contract BattleArena is ReentrancyGuard, Ownable {
         require(!battle.hasPlayer2Registered, "Battle is full");
         require(msg.sender != battle.player1, "Cannot join your own battle");
         require(msg.value == battle.stakeAmount, "Must match stake amount");
+        
+        // Check if battle is restricted to specific player
+        if (battle.intendedPlayer2 != address(0)) {
+            require(msg.sender == battle.intendedPlayer2, "Not authorized to join this battle");
+        }
 
         battle.player2 = msg.sender;
         battle.hasPlayer2Registered = true;
