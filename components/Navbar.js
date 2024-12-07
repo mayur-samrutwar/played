@@ -46,6 +46,9 @@ export default function Navbar() {
           NPC
         </Link>
       </div>
+      <div className="hidden md:block">
+        <w3m-button label="Login" balance="hide" />
+      </div>
 
       {/* Mobile menu dropdown */}
       <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden fixed left-0 right-0 top-[60px] bg-white border-b border-gray-200 p-4 space-y-4 z-50 shadow-lg`}>
