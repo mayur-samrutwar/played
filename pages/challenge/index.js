@@ -17,7 +17,7 @@ export default function Commit() {
       {/* Commitment Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Plank Challenge Card */}
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
           <div className="flex justify-between items-start mb-4">
             <div>
               <span className="px-3 py-1 bg-green-700 rounded-full text-sm">Fitness Challenge</span>

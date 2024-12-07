@@ -25,11 +25,11 @@ export default function Navbar() {
         <Link href="/battle" className="text-md text-gray-700 hover:text-gray-900">
            1v1 Battle
         </Link>
-        <Link href="/challenges" className="text-md text-gray-700 hover:text-gray-900">
+        {/* <Link href="/challenges" className="text-md text-gray-700 hover:text-gray-900">
           Challenges
-        </Link>
-        <Link href="/commit" className="text-md text-gray-700 hover:text-gray-900">
-          Commit
+        </Link> */}
+        <Link href="/challeges" className="text-md text-gray-700 hover:text-gray-900">
+          Challenges
         </Link>
       </div>
       <div className="hidden md:block">
