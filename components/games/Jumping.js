@@ -353,7 +353,7 @@ export default function Jumping() {
             <li>Place both feet inside the red box</li>
             <li>Hold still for 2 seconds to start</li>
             <li>Jump over obstacles to score points!</li>
-            <li>Don't hit the obstacles - you have 3 lives</li>
+            <li>Don&apos;t hit the obstacles - you have 3 lives</li>
           </ol>
         </div>
 
