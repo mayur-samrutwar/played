@@ -1,14 +1,116 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useWriteContract, useWaitForTransactionReceipt, useAccount, useSimulateContract } from 'wagmi';
+import { parseEther } from 'viem';
+import battleABI from '@/contract/abi/battle.json';
+import { decodeEventLog } from 'viem';
 
 export default function CreateBattle() {
   const [stakeAmount, setStakeAmount] = useState('');
+  const [showTransactionDialog, setShowTransactionDialog] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const { address } = useAccount();
   
-  const handleCreateBattle = (e) => {
+  const { writeContract, data: hash } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed, data: receipt } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  // Add simulation to check if the transaction will succeed
+  const { data: simulateData } = useSimulateContract({
+    address: process.env.NEXT_PUBLIC_BATTLE_CONTRACT_ADDRESS_BASE,
+    abi: battleABI,
+    functionName: 'createBattle',
+    value: stakeAmount ? parseEther(stakeAmount) : undefined,
+    account: address,
+  });
+
+  const BATTLE_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_BATTLE_CONTRACT_ADDRESS_BASE;
+  
+  const handleCreateBattle = async (e) => {
     e.preventDefault();
-    // Contract interaction will be added later
-    // For now, just redirect to a dummy battle page
-    window.location.href = `/battle/${Date.now()}`;
+    
+    if (!BATTLE_CONTRACT_ADDRESS) {
+      console.error('Contract address is not defined');
+      alert('Configuration error: Contract address is missing');
+      return;
+    }
+
+    if (!address) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
+      alert('Please enter a valid stake amount');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const stakeAmountWei = parseEther(stakeAmount);
+      
+      // Log the transaction parameters for debugging
+      console.log('Transaction Parameters:', {
+        address: BATTLE_CONTRACT_ADDRESS,
+        value: stakeAmountWei.toString(),
+        account: address,
+      });
+
+      await writeContract({
+        address: BATTLE_CONTRACT_ADDRESS,
+        abi: battleABI,
+        functionName: 'createBattle',
+        value: stakeAmountWei,
+      });
+      
+    } catch (error) {
+      console.error('Error creating battle:', error);
+      if (error.message.includes('gas')) {
+        alert('Transaction failed: Gas estimation error. Please check your stake amount and try again.');
+      } else {
+        alert(`Failed to create battle: ${error.message}`);
+      }
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  // Watch for transaction confirmation and log event data
+  useEffect(() => {
+    if (isConfirmed && receipt) {
+      try {
+        // Get the first log (BattleCreated event)
+        const log = receipt.logs[0];
+        
+        // Decode the event data
+        const decodedLog = decodeEventLog({
+          abi: battleABI,
+          data: log.data,
+          topics: log.topics,
+        });
+
+        console.log('Decoded Event:', decodedLog);
+        
+        // Get battleId from the named arguments
+        const battleId = decodedLog.args.battleId;
+        console.log('Battle ID:', battleId);
+
+        if (battleId) {
+          window.location.href = `/battle/${battleId}`;
+        }
+      } catch (error) {
+        console.error('Error decoding event:', error);
+      }
+    }
+  }, [isConfirmed, receipt]);
+
+  // Validate stake amount on input
+  const handleStakeAmountChange = (e) => {
+    const value = e.target.value;
+    if (value === '' || (/^\d*\.?\d*$/.test(value) && parseFloat(value) >= 0)) {
+      setStakeAmount(value);
+    }
   };
 
   return (
@@ -34,10 +136,11 @@ export default function CreateBattle() {
               <div className="mt-1 relative rounded-md shadow-sm">
                 <input
                   type="number"
-                  step="0.01"
+                  step="0.000000000000000001" // Allow for very precise ETH amounts
+                  min="0"
                   required
                   value={stakeAmount}
-                  onChange={(e) => setStakeAmount(e.target.value)}
+                  onChange={handleStakeAmountChange}
                   className="block w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="0.1"
                 />
@@ -71,9 +174,11 @@ export default function CreateBattle() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200"
+              disabled={isCreating || isConfirming || !stakeAmount || !address}
+              className={`w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-medium transition-colors duration-200
+                ${isCreating || isConfirming || !stakeAmount || !address ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
             >
-              Create Battle
+              {isCreating || isConfirming ? 'Creating Battle...' : 'Create Battle'}
             </button>
           </form>
         </motion.div>
