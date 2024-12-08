@@ -51,11 +51,11 @@ const metadata = {
 const modal = createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [baseSepolia, base],
+  networks: [baseSepolia],
   defaultNetwork: baseSepolia,
   metadata: metadata,
   features: {
-    analytics: true, // Optional - defaults to your Cloud configuration
+    analytics: true,
   }
 })
 

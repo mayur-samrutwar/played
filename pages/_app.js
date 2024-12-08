@@ -1,12 +1,14 @@
 import "@/styles/globals.css";
+import '@coinbase/onchainkit/styles.css';
 import Layout from "@/components/Layout";
-import ContextProvider from '@/context';
+import { OnchainKitWrapper } from '@/providers/OnchainKitProvider';
 
 export default function App({ Component, pageProps }) {
   return (
-  <ContextProvider>
-  <Layout>
-    <Component {...pageProps} />
-  </Layout>
-  </ContextProvider>)
+    <OnchainKitWrapper>
+      <Layout>
+        <Component {...pageProps} />
+      </Layout>
+    </OnchainKitWrapper>
+  );
 }
