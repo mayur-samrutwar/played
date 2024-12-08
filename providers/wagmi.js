@@ -1,7 +1,8 @@
 'use client';
 
-import { http, createConfig } from 'wagmi';
+import { createConfig, http } from 'wagmi';
 import { base, baseSepolia } from 'viem/chains';
+import { injected } from 'wagmi/connectors';
 
 const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
 
@@ -11,7 +12,11 @@ if (!projectId) {
 
 export const wagmiConfig = createConfig({
   chains: [base, baseSepolia],
-  multiInjectedProviderDiscovery: false,
+  connectors: [
+    injected({
+      target: 'metaMask'
+    }),
+  ],
   ssr: true,
   transports: {
     [base.id]: http(),
