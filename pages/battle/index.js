@@ -35,13 +35,43 @@ export default function CreateBattle() {
     { id: '0', name: 'Base Ninja', icon: '🥷' },
   ];
 
+  // Add function to resolve Base name to address
+  const resolveBaseName = async (baseName) => {
+    try {
+      const response = await fetch(`https://base.blockscout.com/api/v2/search?q=${baseName}`);
+      const data = await response.json();
+      
+      if (data.items && data.items[0] && data.items[0].ens_info) {
+        return data.items[0].ens_info.address_hash;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error resolving Base name:', error);
+      return null;
+    }
+  };
+
+  // Update handleCreateBattle to resolve Base name
   const handleCreateBattle = async (e) => {
     e.preventDefault();
+    
+    let resolvedAddress = friendAddress;
+    
+    // Check if the input is a Base name
+    if (friendAddress.toLowerCase().endsWith('.base.eth')) {
+      const resolved = await resolveBaseName(friendAddress);
+      if (resolved) {
+        resolvedAddress = resolved;
+      } else {
+        alert('Could not resolve Base name. Please check the name or use the address directly.');
+        return;
+      }
+    }
     
     console.log('Creating battle with params:', {
       address: BATTLE_CONTRACT_ADDRESS,
       stakeAmount,
-      friendAddress,
+      friendAddress: resolvedAddress,
       hasAddress: !!address,
     });
     
@@ -69,7 +99,7 @@ export default function CreateBattle() {
         address: BATTLE_CONTRACT_ADDRESS,
         value: stakeAmountWei.toString(),
         account: address,
-        intendedPlayer: friendAddress,
+        intendedPlayer: resolvedAddress,
       });
 
       if (simulateError) {
@@ -82,7 +112,7 @@ export default function CreateBattle() {
         abi: battleABI,
         functionName: 'createBattle',
         value: stakeAmountWei,
-        args: [friendAddress],
+        args: [resolvedAddress],
       });
 
       console.log('Transaction submitted:', tx);
