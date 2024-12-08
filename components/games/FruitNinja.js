@@ -643,6 +643,12 @@ export default function FruitNinja({
 
   // Modify the start screen JSX
   if (!isGameStarted) {
+    // If in battle mode, skip the game mode selection and start immediately
+    if (isBattleMode) {
+      setIsGameStarted(true);
+      return null;
+    }
+
     return (
       <div className="relative flex items-start p-8 max-w-[1400px] mx-auto gap-10">
         <div className="w-full flex gap-10">
@@ -680,7 +686,7 @@ export default function FruitNinja({
     );
   }
 
-  // Modify the game over modal to only show submit button in earn mode
+  // Modify the game over modal to show submit button in both earn and battle modes
   const GameOverModal = () => (
     <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
       <div className="bg-white rounded-3xl p-10 text-center max-w-[400px] w-[90%] shadow-2xl relative">
@@ -716,7 +722,8 @@ export default function FruitNinja({
           </p>
         )}
         
-        {gameMode === 'earn' && (
+        {/* Show submit button for both earn mode and battle mode */}
+        {(gameMode === 'earn' || isBattleMode) && (
           <div className="flex flex-col gap-4">
             {txHash ? (
               <div className="text-center">
