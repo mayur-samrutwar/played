@@ -11,24 +11,6 @@ export default function Games() {
       imageUrl: '/games/fruit-ninja.png',
       category: 'Arcade'
     },
-    {
-      id: 2,
-      name: 'Dino Run',
-      description: 'Jump and dodge obstacles in this endless runner. Help our prehistoric friend survive as long as possible!',
-      link: '/games/dino',
-      imageUrl: '/games/dino.png',
-      category: 'Runner',
-      comingSoon: true
-    },
-    {
-      id: 3,
-      name: 'Plank Challenge',
-      description: 'Test your balance and timing in this addictive platformer. How far can you make it?',
-      link: '/games/plank',
-      imageUrl: '/games/plank.png',
-      category: 'Platform',
-      comingSoon: true
-    }
   ];
 
   return (

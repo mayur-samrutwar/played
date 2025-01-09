@@ -22,15 +22,9 @@ export default function Navbar() {
         <Link href="/games" className="text-md text-gray-700 hover:text-gray-900">
           Games
         </Link>
-        <Link href="/battle" className="text-md text-gray-700 hover:text-gray-900">
-           1v1 Battle
-        </Link>
-        {/* <Link href="/challenges" className="text-md text-gray-700 hover:text-gray-900">
-          Challenges
-        </Link> */}
-        <Link href="/challenges" className="text-md text-gray-700 hover:text-gray-900">
-          Challenges
-        </Link>
+        <span className="text-md text-gray-700">
+           1v1 Battle <span className="text-sm text-gray-500">(Coming Soon)</span>
+        </span>
       </div>
       <div className="hidden md:block">
         <w3m-button label="Login" balance="hide" />
