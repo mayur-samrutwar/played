@@ -93,29 +93,27 @@ export default function FruitNinja({
   const drawBaseLogo = (ctx, x, y, radius) => {
     ctx.save();
     
-    // Scale everything relative to the desired radius (original SVG is 146x146)
-    const scale = (radius * 2) / 146;
+    // Scale everything relative to the desired radius (original SVG is 32x32)
+    const scale = (radius * 2) / 32;
     ctx.translate(x - radius, y - radius);
     ctx.scale(-scale, scale); // Negative x scale to flip horizontally
-    ctx.translate(-146, 0);   // Translate back after the flip
+    ctx.translate(-32, 0);    // Translate back after the flip
     
-    // Draw the blue circle
+    // Draw the purple path using the exact SVG path
     ctx.beginPath();
-    ctx.arc(73, 73, 73, 0, 2 * Math.PI);
-    ctx.fillStyle = '#0052FF';
-    ctx.fill();
+    ctx.fillStyle = '#836EF9';
+    ctx.moveTo(16, 0);
+    ctx.bezierCurveTo(11.3795, 0, 0, 11.3792, 0, 15.9999);
+    ctx.bezierCurveTo(0, 20.6206, 11.3795, 32, 15.9999, 32);
+    ctx.bezierCurveTo(20.6203, 32, 32, 20.6204, 32, 15.9999);
+    ctx.bezierCurveTo(32, 11.3794, 20.6205, 0, 15.9999, 0);
+    ctx.closePath();
     
-    // Draw the white path using the exact SVG path
-    ctx.beginPath();
-    ctx.fillStyle = 'white';
-    ctx.moveTo(73.323, 123.729);
-    ctx.bezierCurveTo(101.617, 123.729, 124.553, 100.832, 124.553, 72.5875);
-    ctx.bezierCurveTo(124.553, 44.343, 101.617, 21.4463, 73.323, 21.4463);
-    ctx.bezierCurveTo(46.4795, 21.4463, 24.4581, 42.0558, 22.271, 68.2887);
-    ctx.lineTo(89.9859, 68.2887);
-    ctx.lineTo(89.9859, 76.8864);
-    ctx.lineTo(22.271, 76.8864);
-    ctx.bezierCurveTo(24.4581, 103.119, 46.4795, 123.729, 73.323, 123.729);
+    ctx.moveTo(13.5066, 25.1492);
+    ctx.bezierCurveTo(11.5582, 24.6183, 6.31981, 15.455, 6.85083, 13.5066);
+    ctx.bezierCurveTo(7.38185, 11.5581, 16.545, 6.31979, 18.4933, 6.8508);
+    ctx.bezierCurveTo(20.4418, 7.38173, 25.6802, 16.5449, 25.1492, 18.4934);
+    ctx.bezierCurveTo(24.6182, 20.4418, 15.455, 25.6802, 13.5066, 25.1492);
     ctx.closePath();
     ctx.fill();
     
@@ -594,9 +592,9 @@ export default function FruitNinja({
         </button>
 
         <div className="flex items-center gap-4 mb-6">
-          <span className="px-3 py-1 bg-blue-700 text-white rounded-full text-sm">Reward Challenge</span>
+          <span className="px-3 py-1 bg-[var(--primary)] text-white rounded-full text-sm">Reward Challenge</span>
           <Image 
-            src="/Base_Network_Logo.svg"
+            src="/monadlogo.svg"
             alt="Challenge Icon"
             width={40}
             height={40}
@@ -618,9 +616,9 @@ export default function FruitNinja({
           onClick={handleStakeAndPlay}
           disabled={isStaking || isConfirming}
           className={`
-            w-full bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+            w-full bg-[var(--primary)] text-white rounded-xl px-8 py-4 text-lg font-medium
             cursor-pointer transition-all duration-200 outline-none
-            hover:bg-blue-700 active:scale-[0.98]
+            hover:bg-[var(--primary-dark)] active:scale-[0.98]
             disabled:opacity-50 disabled:cursor-not-allowed
             flex items-center justify-center gap-2
           `}
@@ -660,9 +658,9 @@ export default function FruitNinja({
             </button>
             <button
               onClick={() => setShowEarnDialog(true)}
-              className="bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+              className="bg-[var(--primary)] text-white rounded-xl px-8 py-4 text-lg font-medium
                 cursor-pointer transition-all duration-200 outline-none
-                hover:bg-blue-700 active:scale-[0.98] w-48"
+                hover:bg-[var(--primary-dark)] active:scale-[0.98] w-48"
             >
               Play to Earn
             </button>
@@ -705,7 +703,7 @@ export default function FruitNinja({
         </p>
 
         {gameMode === 'earn' && (
-          <p className="mb-8 text-lg text-blue-600 font-medium">
+          <p className="mb-8 text-lg text-[var(--primary)] font-medium">
             Total Earned: {(finalScore * 0.0000025).toFixed(7)} ETH
           </p>
         )}
@@ -743,9 +741,9 @@ export default function FruitNinja({
                 onClick={() => handleSubmitScore(finalScore)}
                 disabled={isConfirming}
                 className={`
-                  bg-blue-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                  bg-[var(--primary)] text-white rounded-xl px-8 py-4 text-lg font-medium
                   cursor-pointer transition-all duration-200 outline-none
-                  hover:bg-blue-700 active:scale-[0.98]
+                  hover:bg-[var(--primary-dark)] active:scale-[0.98]
                   disabled:opacity-50 disabled:cursor-not-allowed
                   flex items-center justify-center
                 `}
@@ -837,7 +835,7 @@ export default function FruitNinja({
                     {score.toLocaleString()}
                   </div>
                   {gameMode === 'earn' && (
-                    <div className="text-sm font-medium text-blue-600 mt-1">
+                    <div className="text-sm font-medium text-[var(--primary)] mt-1">
                       {(score * 0.0000025).toFixed(7)} ETH
                     </div>
                   )}
@@ -867,7 +865,7 @@ export default function FruitNinja({
                 {score.toLocaleString()}
               </div>
               {gameMode === 'earn' && (
-                <div className="text-sm font-medium text-blue-600">
+                <div className="text-sm font-medium text-[var(--primary)]">
                   {(score * 0.0000025).toFixed(7)} ETH
                 </div>
               )}

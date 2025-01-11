@@ -1,7 +1,26 @@
+import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
+import Navbar from '@/components/Navbar';
+
+// Dynamically import FruitNinja component with SSR disabled
+const FruitNinja = dynamic(() => import('@/components/games/FruitNinja'), {
+  ssr: false
+});
+
 export default function Home() {
   return (
-   <div className="flex flex-col items-center justify-center h-screen">
-     <h1 className="font-geist-sans text-7xl mb-8 font-black text-center max-w-4xl">wtf? just enjoy the games, man</h1>
-   </div>
+    <div className="min-h-screen bg-[#836EF9]">
+      <Navbar />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="max-w-[1400px] mx-auto px-4 py-8"
+      >
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <FruitNinja showLeaderboard={true} />
+        </div>
+      </motion.div>
+    </div>
   );
 }

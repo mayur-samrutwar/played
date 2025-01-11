@@ -1,25 +1,27 @@
-// config/index.js
+import { getDefaultConfig } from "connectkit";
+import { createConfig } from "wagmi";
+import { baseSepolia } from "wagmi/chains";
+import { http } from "wagmi";
 
-import { cookieStorage, createStorage, http } from '@wagmi/core';
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import { baseSepolia, base } from '@reown/appkit/networks';
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
+const chains = [baseSepolia];
 
-// Get projectId from https://cloud.reown.com
-export const projectId = 'c13f4ce46cefc0c967f0c802c28b3eb9';
-console.log(projectId)
+export const config = createConfig(
+  getDefaultConfig({
+    chains: chains,
+    transports: {
+      [baseSepolia.id]: http(),
+    },
+    // Required API Keys
+    alchemyId: process.env.NEXT_PUBLIC_ALCHEMY_ID || "",
+    walletConnectProjectId: walletConnectProjectId,
 
+    // Required
+    appName: "monadninja",
 
-export const networks = [ baseSepolia, base];
-
-
-// Set up the Wagmi Adapter (Config)
-export const wagmiAdapter = new WagmiAdapter({
-  storage: createStorage({
-    storage: cookieStorage
-  }),
-  ssr: true,
-  projectId,
-  networks
-});
-
-export const config = wagmiAdapter.wagmiConfig;
+    // Optional
+    appDescription: "MonadNinja",
+    appUrl: "https://monadninja.xyz",
+    appIcon: "https://monadninja.xyz/monadninja.png",
+  })
+);
