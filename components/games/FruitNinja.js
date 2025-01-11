@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as poseDetection from '@tensorflow-models/pose-detection';
-import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract, useAccount } from 'wagmi';
 import gamesABI from '../../contract/abi/games.json';
 import Image from 'next/image';
 import { parseEther } from 'viem';
@@ -45,6 +45,7 @@ export default function FruitNinja({
   const [isStaking, setIsStaking] = useState(false);
   const [stakeError, setStakeError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { isConnected } = useAccount();
 
   const { data: leaderboardData } = useReadContract({
     address: GAMES_CONTRACT_ADDRESS,
@@ -333,6 +334,11 @@ export default function FruitNinja({
   };
 
   const handleStakeAndPlay = async () => {
+    if (!isConnected) {
+      setStakeError('Please connect your wallet first');
+      return;
+    }
+
     setStakeError(null);
     setIsStaking(true);
     
@@ -351,7 +357,6 @@ export default function FruitNinja({
 
       console.log('Stake transaction submitted:', tx);
       
-      // Don't close dialog or start game yet - wait for confirmation
     } catch (error) {
       console.error('Error staking:', error);
       setStakeError(error.message || 'Failed to stake. Please try again.');
@@ -614,9 +619,13 @@ export default function FruitNinja({
     <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
       <div className="bg-white rounded-3xl p-10 max-w-[500px] w-[90%] shadow-2xl relative">
         <button 
-          onClick={() => setShowEarnDialog(false)}
+          onClick={() => {
+            setShowEarnDialog(false);
+            setStakeError(null);
+            setIsStaking(false);
+            setGameMode(null);
+          }}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-          disabled={isStaking}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -634,39 +643,51 @@ export default function FruitNinja({
         </div>
 
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Monad Ninja Master</h2>
-        <p className="text-gray-600 mb-6">
-          Earn {STAKE_AMOUNT * 0.02} MON for every Monad token you hit in the Monad Ninja game!
-        </p>
+        
+        {isConnected ? (
+          <>
+            <p className="text-gray-600 mb-6">
+              Earn {STAKE_AMOUNT * 0.02} MON for every Monad token you hit in the Monad Ninja game!
+            </p>
 
-        {stakeError && (
-          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg text-sm">
-            {stakeError}
-          </div>
+            {stakeError && (
+              <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg text-sm">
+                {stakeError}
+              </div>
+            )}
+
+            <button 
+              onClick={handleStakeAndPlay}
+              disabled={isStaking || isConfirming}
+              className={`
+                w-full bg-[var(--primary)] text-white rounded-xl px-8 py-4 text-lg font-medium
+                cursor-pointer transition-all duration-200 outline-none
+                hover:bg-[var(--primary-dark)] active:scale-[0.98]
+                disabled:opacity-50 disabled:cursor-not-allowed
+                flex items-center justify-center gap-2
+              `}
+            >
+              {(isStaking || isConfirming) ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {isConfirming ? 'Confirming Transaction...' : 'Staking MON...'}
+                </>
+              ) : (
+                `Stake ${STAKE_AMOUNT} MON and Play`
+              )}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-gray-600 mb-6">
+              Connect your wallet to play and earn MON tokens!
+            </p>
+            <w3m-button />
+          </>
         )}
-
-        <button 
-          onClick={handleStakeAndPlay}
-          disabled={isStaking || isConfirming}
-          className={`
-            w-full bg-[var(--primary)] text-white rounded-xl px-8 py-4 text-lg font-medium
-            cursor-pointer transition-all duration-200 outline-none
-            hover:bg-[var(--primary-dark)] active:scale-[0.98]
-            disabled:opacity-50 disabled:cursor-not-allowed
-            flex items-center justify-center gap-2
-          `}
-        >
-          {(isStaking || isConfirming) ? (
-            <>
-              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {isConfirming ? 'Confirming Transaction...' : 'Staking MON...'}
-            </>
-          ) : (
-            `Stake ${STAKE_AMOUNT} MON and Play`
-          )}
-        </button>
       </div>
     </div>
   );
