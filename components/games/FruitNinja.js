@@ -61,7 +61,7 @@ export default function FruitNinja({
     return {
       x: Math.random() * (canvasRef.current?.width - 2 * radius) + radius,
       y: -radius,
-      speed: 4,
+      speed: 8,
       radius
     };
   };
@@ -130,7 +130,13 @@ export default function FruitNinja({
     const zaps = zapsRef.current;
     
     // Add new balls randomly
-    if (Math.random() < 0.01) { // 1% chance each frame
+    if (Math.random() < 0.03) { // Changed from 0.01 to 0.03 for 3% chance
+      balls.push(createBall());
+    }
+    
+    // You could even add multiple balls at once
+    if (Math.random() < 0.01) { // 1% chance to add two balls
+      balls.push(createBall());
       balls.push(createBall());
     }
     
