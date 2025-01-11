@@ -3,18 +3,23 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
-contract Games is ReentrancyGuard, Ownable {
-    constructor() Ownable(msg.sender) {}
+contract Games is ReentrancyGuard, Ownable, ERC721 {
+    constructor() 
+        ERC721("Monad Ninja", "MNINJA") 
+        Ownable(msg.sender) 
+    {}
 
     // Game ID to player address to score mapping
     mapping(uint256 => mapping(address => uint256)) public gameScores;
     mapping(uint256 => string) public gameNames;
     uint256 public nextGameId;
 
-    // Add constants for stake amount and reward multiplier
-    uint256 public constant STAKE_AMOUNT = 1 ether;
-    uint256 public constant REWARD_MULTIPLIER = 0.02 ether;
+    // Add constants for stake amount and reward multiplier (in MON)
+    uint256 public constant STAKE_AMOUNT = 100000000000000000; // 0.1 MON (18 decimals)
+    uint256 public constant REWARD_MULTIPLIER = 2000000000000000; // 0.002 MON (18 decimals)
 
     // Enhanced event with indexed gameId for easier filtering
     event GameCreated(uint256 indexed gameId, string name);
@@ -38,6 +43,27 @@ contract Games is ReentrancyGuard, Ownable {
 
     // Add this state variable to track submitted scores for each game session
     mapping(uint256 => mapping(address => bool)) public hasSubmittedScore;
+
+    // Add NFT related state variables
+    uint256 private _nextTokenId;
+    mapping(uint256 => ScoreNFT) public scoreNFTs;
+    
+    struct ScoreNFT {
+        uint256 gameId;
+        uint256 score;
+        uint256 timestamp;
+    }
+
+    // Add NFT minted event
+    event ScoreNFTMinted(
+        uint256 indexed tokenId,
+        address indexed player,
+        uint256 indexed gameId,
+        uint256 score
+    );
+
+    // Add counter state variable near other NFT-related state variables
+    uint256 private _totalNFTsMinted;
 
     // Create a new game
     function createGame(string memory gameName) external onlyOwner returns (uint256) {
@@ -77,12 +103,25 @@ contract Games is ReentrancyGuard, Ownable {
             timestamp: block.timestamp
         }));
         
+        // Mint NFT
+        uint256 tokenId = _nextTokenId++;
+        _safeMint(msg.sender, tokenId);
+        _totalNFTsMinted++;
+        
+        // Store NFT metadata
+        scoreNFTs[tokenId] = ScoreNFT({
+            gameId: gameId,
+            score: score,
+            timestamp: block.timestamp
+        });
+        
         // Calculate and transfer reward
         uint256 reward = score * REWARD_MULTIPLIER;
         (bool success, ) = msg.sender.call{value: reward}("");
         require(success, "Reward transfer failed");
         
         emit ScoreSubmitted(gameId, msg.sender, score, block.timestamp);
+        emit ScoreNFTMinted(tokenId, msg.sender, gameId, score);
     }
 
     // Get score for a specific game and player
@@ -136,5 +175,71 @@ contract Games is ReentrancyGuard, Ownable {
         
         (bool success, ) = msg.sender.call{value: balance}("");
         require(success, "Withdrawal failed");
+    }
+
+    // Add function to get NFT metadata
+    function getScoreNFT(uint256 tokenId) external view returns (ScoreNFT memory) {
+        require(_ownerOf(tokenId) != address(0), "NFT does not exist");
+        return scoreNFTs[tokenId];
+    }
+
+    // Helper function for number to string conversion
+    function _toString(uint256 value) internal pure returns (string memory) {
+        // Handle 0 explicitly, cannot use empty string
+        if (value == 0) {
+            return "0";
+        }
+        
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
+    }
+
+    // Override tokenURI to return metadata
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_ownerOf(tokenId) != address(0), "NFT does not exist");
+        ScoreNFT memory nft = scoreNFTs[tokenId];
+        
+        // Create JSON metadata
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "Game Score #', 
+                        _toString(tokenId),
+                        '", "description": "Score achieved in ',
+                        gameNames[nft.gameId],
+                        '", "attributes": [{"trait_type": "Game", "value": "',
+                        gameNames[nft.gameId],
+                        '"}, {"trait_type": "Score", "value": ',
+                        _toString(nft.score),
+                        '}, {"trait_type": "Timestamp", "value": ',
+                        _toString(nft.timestamp),
+                        '}]}'
+                    )
+                )
+            )
+        );
+        
+        return string(abi.encodePacked("data:application/json;base64,", json));
+    }
+
+    // Add receive function to accept ETH
+    receive() external payable {}
+
+    // Add getter function for total NFTs minted
+    function getTotalNFTsMinted() external view returns (uint256) {
+        return _totalNFTsMinted;
     }
 }

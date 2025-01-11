@@ -4,11 +4,12 @@ import * as poseDetection from '@tensorflow-models/pose-detection';
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract, useAccount } from 'wagmi';
 import gamesABI from '../../contract/abi/games.json';
 import Image from 'next/image';
-import { parseEther } from 'viem';
+import { parseEther, formatEther } from 'viem';
 
-const GAMES_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAMES_CONTRACT_ADDRESS_BASE;
+const GAMES_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAMES_CONTRACT_ADDRESS_MONAD;
 const FRUIT_NINJA_GAME_ID = 0;
-const STAKE_AMOUNT = 1; 
+const STAKE_AMOUNT = "0.1"; // as string for precise conversion
+const REWARD_MULTIPLIER = "0.002"; // as string for precise conversion
 
 export default function FruitNinja({ 
   showLeaderboard = false,
@@ -265,7 +266,7 @@ export default function FruitNinja({
       ctx.textAlign = 'center';
       ctx.translate(anim.x, anim.y - anim.offsetY);
       ctx.scale(-1, 1); // This flips the text horizontally
-      ctx.fillText('+0.02 MON', 0, 0);
+      ctx.fillText('+0.002 MON', 0, 0);
       ctx.restore();
 
       // Update animation
@@ -352,14 +353,17 @@ export default function FruitNinja({
         abi: gamesABI,
         functionName: 'playGame',
         args: [FRUIT_NINJA_GAME_ID],
-        value: parseEther(STAKE_AMOUNT.toString()),
+        value: parseEther(STAKE_AMOUNT),
       });
 
-      console.log('Stake transaction submitted:', tx);
-      
+      setTxHash(tx);
+      setShowEarnDialog(false);
+      setIsGameStarted(true);
+      setGameMode('earn');
     } catch (error) {
-      console.error('Error staking:', error);
+      console.error('Stake error:', error);
       setStakeError(error.message || 'Failed to stake. Please try again.');
+    } finally {
       setIsStaking(false);
     }
   };
@@ -647,7 +651,7 @@ export default function FruitNinja({
         {isConnected ? (
           <>
             <p className="text-gray-600 mb-6">
-              Earn {STAKE_AMOUNT * 0.02} MON for every Monad token you hit in the Monad Ninja game!
+              Earn {STAKE_AMOUNT * 0.002} MON for every Monad token you hit in the Monad Ninja game!
             </p>
 
             {stakeError && (
@@ -766,31 +770,14 @@ export default function FruitNinja({
           Final Score: {finalScore.toLocaleString()}
         </p>
 
-        {gameMode === 'earn' && (
-          <p className="mb-8 text-lg text-[var(--primary)] font-medium">
-            Total Earned: {(finalScore * 0.02).toFixed(7)} MON
-          </p>
-        )}
-        
-        {submitError && (
-          <p className="mb-4 text-sm text-red-600">
-            {submitError}
-          </p>
-        )}
-        
         {gameMode === 'earn' ? (
           <div className="flex flex-col gap-4">
             {txHash ? (
               <div className="text-center">
                 <p className="text-green-600 font-medium mb-2">Score submitted successfully!</p>
-                <a 
-                  href={`https://base-sepolia.blockscout.com/tx/${txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-700 underline"
-                >
-                  View Transaction
-                </a>
+                <p className="text-gray-600 mb-4">
+                  Your score has been recorded and minted as an NFT! 🎉
+                </p>
                 <div className="flex flex-col gap-4 mt-4">
                   <button
                     onClick={() => {
@@ -846,10 +833,10 @@ export default function FruitNinja({
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    Submitting Score...
+                    Submitting Score & Minting NFT...
                   </>
                 ) : (
-                  'Submit Score'
+                  'Submit Score & Mint NFT'
                 )}
               </button>
             )}
@@ -935,7 +922,7 @@ export default function FruitNinja({
                   </div>
                   {gameMode === 'earn' && (
                     <div className="text-sm font-medium text-[var(--primary)] mt-1">
-                      {(score * 0.02).toFixed(7)} MON
+                      {parseFloat(formatEther(BigInt(Math.floor(score)) * parseEther(REWARD_MULTIPLIER))).toFixed(7)} MON
                     </div>
                   )}
                 </div>
@@ -965,7 +952,7 @@ export default function FruitNinja({
               </div>
               {gameMode === 'earn' && (
                 <div className="text-sm font-medium text-[var(--primary)]">
-                  {(score * 0.02).toFixed(7)} MON
+                  {parseFloat(formatEther(BigInt(Math.floor(score)) * parseEther(REWARD_MULTIPLIER))).toFixed(7)} MON
                 </div>
               )}
               <div className="mt-2 text-sm font-medium text-gray-600">Lives</div>
