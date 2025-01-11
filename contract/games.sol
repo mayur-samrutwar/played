@@ -13,8 +13,8 @@ contract Games is ReentrancyGuard, Ownable {
     uint256 public nextGameId;
 
     // Add constants for stake amount and reward multiplier
-    uint256 public constant STAKE_AMOUNT = 0.00025 ether;
-    uint256 public constant REWARD_MULTIPLIER = 0.0000025 ether;
+    uint256 public constant STAKE_AMOUNT = 1 ether;
+    uint256 public constant REWARD_MULTIPLIER = 0.02 ether;
 
     // Enhanced event with indexed gameId for easier filtering
     event GameCreated(uint256 indexed gameId, string name);

@@ -8,7 +8,7 @@ import { parseEther } from 'viem';
 
 const GAMES_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_GAMES_CONTRACT_ADDRESS_BASE;
 const FRUIT_NINJA_GAME_ID = 0;
-const STAKE_AMOUNT = 0.00025; // Match contract's STAKE_AMOUNT
+const STAKE_AMOUNT = 1; 
 
 export default function FruitNinja({ 
   showLeaderboard = false,
@@ -264,7 +264,7 @@ export default function FruitNinja({
       ctx.textAlign = 'center';
       ctx.translate(anim.x, anim.y - anim.offsetY);
       ctx.scale(-1, 1); // This flips the text horizontally
-      ctx.fillText('+0.0000025 ETH', 0, 0);
+      ctx.fillText('+0.02 MON', 0, 0);
       ctx.restore();
 
       // Update animation
@@ -633,9 +633,9 @@ export default function FruitNinja({
           />
         </div>
 
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Base Ninja Master</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Monad Ninja Master</h2>
         <p className="text-gray-600 mb-6">
-          Earn {STAKE_AMOUNT * 0.01} ETH for every Base token you slice in the Base Ninja game!
+          Earn {STAKE_AMOUNT * 0.02} MON for every Monad token you hit in the Monad Ninja game!
         </p>
 
         {stakeError && (
@@ -661,10 +661,10 @@ export default function FruitNinja({
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              {isConfirming ? 'Confirming Transaction...' : 'Staking ETH...'}
+              {isConfirming ? 'Confirming Transaction...' : 'Staking MON...'}
             </>
           ) : (
-            `Stake ${STAKE_AMOUNT} ETH and Play`
+            `Stake ${STAKE_AMOUNT} MON and Play`
           )}
         </button>
       </div>
@@ -747,7 +747,7 @@ export default function FruitNinja({
 
         {gameMode === 'earn' && (
           <p className="mb-8 text-lg text-[var(--primary)] font-medium">
-            Total Earned: {(finalScore * 0.0000025).toFixed(7)} ETH
+            Total Earned: {(finalScore * 0.02).toFixed(7)} MON
           </p>
         )}
         
@@ -914,7 +914,7 @@ export default function FruitNinja({
                   </div>
                   {gameMode === 'earn' && (
                     <div className="text-sm font-medium text-[var(--primary)] mt-1">
-                      {(score * 0.0000025).toFixed(7)} ETH
+                      {(score * 0.02).toFixed(7)} MON
                     </div>
                   )}
                 </div>
@@ -944,7 +944,7 @@ export default function FruitNinja({
               </div>
               {gameMode === 'earn' && (
                 <div className="text-sm font-medium text-[var(--primary)]">
-                  {(score * 0.0000025).toFixed(7)} ETH
+                  {(score * 0.02).toFixed(7)} MON
                 </div>
               )}
               <div className="mt-2 text-sm font-medium text-gray-600">Lives</div>
