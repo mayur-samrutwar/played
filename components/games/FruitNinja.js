@@ -44,6 +44,7 @@ export default function FruitNinja({
   const [txHash, setTxHash] = useState(null);
   const [isStaking, setIsStaking] = useState(false);
   const [stakeError, setStakeError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { data: leaderboardData } = useReadContract({
     address: GAMES_CONTRACT_ADDRESS,
@@ -277,7 +278,21 @@ export default function FruitNinja({
     }
   };
 
-  const resetGame = () => {
+  const resetGame = async () => {
+    setIsLoading(true); // Start loading
+
+    // Stop current camera stream if it exists
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+    }
+    
+    // Cancel any existing animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    // Reset all state variables
     setLives(3);
     setScore(0);
     setIsGameOver(false);
@@ -285,6 +300,18 @@ export default function FruitNinja({
     ballsRef.current = [];
     zapsRef.current = [];
     earnAnimationsRef.current = [];
+    
+    // Clear video source
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    // Re-initialize game state
+    if (gameMode === 'free') {
+      setIsGameStarted(true);
+    } else {
+      setShowEarnDialog(true);
+    }
   };
 
   const closeGame = () => {
@@ -376,14 +403,14 @@ export default function FruitNinja({
   }, [isConfirmed, txError]);
 
   useEffect(() => {
-    if (!isGameStarted) return;
+    if (!isGameStarted || isGameOver) return;
 
     const runPoseDetection = async () => {
+      setIsLoading(true); // Start loading when initialization begins
+      
       try {
         // Initialize TensorFlow.js
         await tf.ready();
-        
-        // Set backend to 'webgl'
         await tf.setBackend('webgl');
         
         // Load the movenet model
@@ -412,6 +439,7 @@ export default function FruitNinja({
                 canvasRef.current.width = videoRef.current.videoWidth;
                 canvasRef.current.height = videoRef.current.videoHeight;
                 detect(detector);
+                setIsLoading(false); // Stop loading once everything is ready
               }
             };
           }
@@ -421,7 +449,8 @@ export default function FruitNinja({
           if (
             videoRef.current && 
             canvasRef.current && 
-            videoRef.current.readyState === 4
+            videoRef.current.readyState === 4 &&
+            !isGameOver // Add check for game over state
           ) {
             const poses = await detector.estimatePoses(videoRef.current);
             
@@ -444,10 +473,13 @@ export default function FruitNinja({
             drawZaps(ctx, zapsRef.current);
           }
           
-          animationFrameRef.current = requestAnimationFrame(() => detect(detector));
+          if (!isGameOver) { // Only request next frame if game is not over
+            animationFrameRef.current = requestAnimationFrame(() => detect(detector));
+          }
         };
       } catch (error) {
         console.error("Error initializing:", error);
+        setIsLoading(false); // Make sure to stop loading if there's an error
       }
     };
 
@@ -462,7 +494,7 @@ export default function FruitNinja({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isGameStarted]);
+  }, [isGameStarted, isGameOver]);
 
   useEffect(() => {
     if (!isGameOver) {
@@ -639,6 +671,15 @@ export default function FruitNinja({
     </div>
   );
 
+  // Add LoadingScreen component
+  const LoadingScreen = () => (
+    <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-40">
+      <div className="w-16 h-16 border-4 border-gray-400 border-t-[var(--primary)] rounded-full animate-spin mb-4" />
+      <p className="text-white text-lg font-medium">Loading Game...</p>
+      <p className="text-gray-400 text-sm mt-2">Please wait while we setup your camera</p>
+    </div>
+  );
+
   // Modify the start screen JSX
   if (!isGameStarted) {
     return (
@@ -650,11 +691,13 @@ export default function FruitNinja({
                 setGameMode('free');
                 setIsGameStarted(true);
               }}
+              disabled={isLoading}
               className="bg-gray-600 text-white rounded-xl px-8 py-4 text-lg font-medium
                 cursor-pointer transition-all duration-200 outline-none
-                hover:bg-gray-700 active:scale-[0.98] w-48"
+                hover:bg-gray-700 active:scale-[0.98] w-48
+                disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Play for Free
+              {isLoading ? 'Loading...' : 'Play for Free'}
             </button>
             <button
               onClick={() => setShowEarnDialog(true)}
@@ -714,7 +757,7 @@ export default function FruitNinja({
           </p>
         )}
         
-        {gameMode === 'earn' && (
+        {gameMode === 'earn' ? (
           <div className="flex flex-col gap-4">
             {txHash ? (
               <div className="text-center">
@@ -727,21 +770,33 @@ export default function FruitNinja({
                 >
                   View Transaction
                 </a>
-                <button
-                  onClick={closeGame}
-                  className="mt-4 w-full bg-gray-600 text-white rounded-xl px-8 py-4 text-lg font-medium
-                    cursor-pointer transition-all duration-200 outline-none
-                    hover:bg-gray-700 active:scale-[0.98]"
-                >
-                  Close Game
-                </button>
+                <div className="flex flex-col gap-4 mt-4">
+                  <button
+                    onClick={() => {
+                      resetGame();
+                    }}
+                    className="w-full bg-[var(--primary)] text-white rounded-xl px-8 py-4 text-lg font-medium
+                      cursor-pointer transition-all duration-200 outline-none
+                      hover:bg-[var(--primary-dark)] active:scale-[0.98]"
+                  >
+                    Play Again
+                  </button>
+                  <button
+                    onClick={closeGame}
+                    className="w-full bg-gray-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                      cursor-pointer transition-all duration-200 outline-none
+                      hover:bg-gray-700 active:scale-[0.98]"
+                  >
+                    Close Game
+                  </button>
+                </div>
               </div>
             ) : (
               <button 
                 onClick={() => handleSubmitScore(finalScore)}
                 disabled={isConfirming}
                 className={`
-                  bg-[var(--primary)] text-white rounded-xl px-8 py-4 text-lg font-medium
+                  w-full bg-[var(--primary)] text-white rounded-xl px-8 py-4 text-lg font-medium
                   cursor-pointer transition-all duration-200 outline-none
                   hover:bg-[var(--primary-dark)] active:scale-[0.98]
                   disabled:opacity-50 disabled:cursor-not-allowed
@@ -777,6 +832,28 @@ export default function FruitNinja({
                 )}
               </button>
             )}
+          </div>
+        ) : (
+          // Free play mode buttons
+          <div className="flex flex-col gap-4 mt-8">
+            <button
+              onClick={() => {
+                resetGame();
+              }}
+              className="w-full bg-[var(--primary)] text-white rounded-xl px-8 py-4 text-lg font-medium
+                cursor-pointer transition-all duration-200 outline-none
+                hover:bg-[var(--primary-dark)] active:scale-[0.98]"
+            >
+              Play Again
+            </button>
+            <button
+              onClick={closeGame}
+              className="w-full bg-gray-600 text-white rounded-xl px-8 py-4 text-lg font-medium
+                cursor-pointer transition-all duration-200 outline-none
+                hover:bg-gray-700 active:scale-[0.98]"
+            >
+              Close Game
+            </button>
           </div>
         )}
       </div>
@@ -821,6 +898,7 @@ export default function FruitNinja({
               ref={canvasRef}
               className="absolute top-0 left-0 w-full h-full scale-x-[-1]"
             />
+            {isLoading && <LoadingScreen />}
           </div>
 
           {/* Show stats and leaderboard only in non-battle mode */}
