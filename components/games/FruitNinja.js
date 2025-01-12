@@ -130,12 +130,12 @@ export default function FruitNinja({
     const zaps = zapsRef.current;
     
     // Add new balls randomly
-    if (Math.random() < 0.03) { // Changed from 0.01 to 0.03 for 3% chance
+    if (Math.random() < 0.02) { // Changed from 0.01 to 0.03 for 3% chance
       balls.push(createBall());
     }
     
     // You could even add multiple balls at once
-    if (Math.random() < 0.01) { // 1% chance to add two balls
+    if (Math.random() < 0.005) { // 1% chance to add two balls
       balls.push(createBall());
       balls.push(createBall());
     }
